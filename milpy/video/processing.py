@@ -999,7 +999,8 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
     else:
         raise Exception('Unrecognized kind.')
 
-    note = ['Make sure you change all cells to "Text" to avoid any Excel automated formatting shit.'].extend(['']*(len(columns)-1))
+    note = ['Make sure you change all cells to "Text" to avoid any Excel automated formatting shit.']
+    note.extend(['']*(len(columns)-1))
     df = pd.DataFrame([note], columns=columns)
     save_path = os.path.join(save_directory, f"empty_metadata_{kind}.xlsx")
     df.to_excel(save_path, index=False)
