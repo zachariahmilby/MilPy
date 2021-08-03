@@ -853,12 +853,12 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
          - "2" = 1080p HD
          - "3" = 4K UHD
 
-     - **Quality Factor:** Handbrake quality factor (±2).
+     - **Quality Factor:** Handbrake quality factor.
 
-          - 20 for 480p/576p Standard Definition
-          - 21 for 720p High Definition
-          - 22 for 1080p Full High Definition
-          - 25 for 2160p 4K Ultra High Definition
+          - 20±2 for 480p/576p Standard Definition
+          - 21±2 for 720p High Definition
+          - 22±2 for 1080p Full High Definition
+          - 25±2 for 2160p 4K Ultra High Definition
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
@@ -916,12 +916,12 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
           - "2" = 1080p HD
           - "3" = 4K UHD
 
-     - **Quality Factor:** Handbrake quality factor (±2).
+     - **Quality Factor:** Handbrake quality factor.
 
-          - 20 for 480p/576p Standard Definition
-          - 21 for 720p High Definition
-          - 22 for 1080p Full High Definition
-          - 25 for 2160p 4K Ultra High Definition
+          - 20±2 for 480p/576p Standard Definition
+          - 21±2 for 720p High Definition
+          - 22±2 for 1080p Full High Definition
+          - 25±2 for 2160p 4K Ultra High Definition
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
