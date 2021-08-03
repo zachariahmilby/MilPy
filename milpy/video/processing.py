@@ -616,9 +616,6 @@ class VideoConverter:
         if test:
             self.video_options.encoder = 'x264'
             self.video_options.speed = 'ultrafast'
-            self.video_options.quality = '40'
-            self.picture_options.width = 320
-            self.picture_options.height = 240
 
         options = [self.handbrake_cli,
                    self.source_options.construct_terminal_commands(),
@@ -629,8 +626,8 @@ class VideoConverter:
                    self.subtitle_options.construct_terminal_commands()]
 
         if test:
-            options.append('--start-at=seconds:3')
-            options.append('--stop-at=seconds:6')
+            options.append('--start-at=seconds:0')
+            options.append('--stop-at=seconds:10')
         os.system(_construct_terminal_commands(options))
 
 

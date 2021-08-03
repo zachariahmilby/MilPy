@@ -772,9 +772,6 @@
         <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="s1">&#39;x264&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="s1">&#39;ultrafast&#39;</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="s1">&#39;40&#39;</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="mi">320</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">240</span>
 
         <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">handbrake_cli</span><span class="p">,</span>
                    <span class="bp">self</span><span class="o">.</span><span class="n">source_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">(),</span>
@@ -785,8 +782,8 @@
                    <span class="bp">self</span><span class="o">.</span><span class="n">subtitle_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()]</span>
 
         <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;--start-at=seconds:3&#39;</span><span class="p">)</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;--stop-at=seconds:6&#39;</span><span class="p">)</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;--start-at=seconds:0&#39;</span><span class="p">)</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;--stop-at=seconds:10&#39;</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">))</span></div></div>
 
 
