@@ -394,7 +394,7 @@ class _PictureOptions:
         options = ["--non-anamorphic",
                    "--comb-detect",
                    "--decomb=\"bob\"",
-                   f"--crop {self.crop}"]
+                   f"--crop={self.crop}"]
         if self.width is not None:
             options.append(f"--width={self.width}")
             options.append(f"--display-width={self.width}")
@@ -1040,6 +1040,7 @@ def _convert_and_tag_spreadsheet_item(iterator: int, dataframe: pd.DataFrame, ou
     converter.audio_options.names = handbrake_metadata["Audio Notes"]
     converter.picture_options.width = handbrake_metadata["Dimensions"].split("x")[0]
     converter.picture_options.height = handbrake_metadata["Dimensions"].split("x")[1]
+    converter.picture_options.crop = handbrake_metadata["Crop"]
 
     # convert the video
     converter.convert(test=test)
