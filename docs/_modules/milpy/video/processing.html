@@ -1,0 +1,1291 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>milpy.video.processing &mdash; MilPy 0.0.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> MilPy
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">The MilPy Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../rst/api_reference.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">MilPy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>milpy.video.processing</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for milpy.video.processing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
+
+
+<span class="k">class</span> <span class="nc">_ValidatePath</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class ensures that an provided file exists.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_raise_value_error_if_path_does_not_exist</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_raise_value_error_if_path_does_not_exist</span><span class="p">(</span><span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">input_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The input file doesn&#39;t exist.&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_ValidateDirectory</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class ensures that the a provided directory exists. If it doesn&#39;t, it creates the directory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_create_directory_if_it_does_not_exist</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_create_directory_if_it_does_not_exist</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_EscapedString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class converts a string to its escaped counterpart, removing any terminal ambiguity.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_original</span> <span class="o">=</span> <span class="n">content</span>
+        <span class="n">escaped_string</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">escaped_string</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">escape</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method escapes a string so it is unambiguous for the command line.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">escape_characters</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;|&#39;</span><span class="p">,</span> <span class="s1">&#39;&amp;&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;;&#39;</span><span class="p">,</span> <span class="s1">&#39;(&#39;</span><span class="p">,</span> <span class="s1">&#39;)&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;~&#39;</span><span class="p">,</span> <span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="s1">&#39;@&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="s1">&#39;!&#39;</span><span class="p">,</span> <span class="s1">&#39;$&#39;</span><span class="p">,</span> <span class="s1">&#39;#&#39;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">,</span>
+                             <span class="s1">&#39;`&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">]</span>
+        <span class="n">escaped_characters</span> <span class="o">=</span> <span class="p">[</span><span class="sa">r</span><span class="s1">&#39;\|&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&amp;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\:&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\(&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\)&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&lt;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&gt;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\~&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\*&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\@&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\?&#39;</span><span class="p">,</span>
+                              <span class="sa">r</span><span class="s1">&#39;\!&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\#&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\&#39;&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&quot;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\`&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\ &#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">esc</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">escape_characters</span><span class="p">)):</span>
+            <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">escape_characters</span><span class="p">[</span><span class="n">esc</span><span class="p">],</span> <span class="n">escaped_characters</span><span class="p">[</span><span class="n">esc</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">string</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">original</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original</span>
+
+
+<span class="k">def</span> <span class="nf">_path_to_system_executable</span><span class="p">(</span><span class="n">executable</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="n">executable</span><span class="p">))</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;chmod 777 </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span> <span class="nf">_construct_terminal_commands</span><span class="p">(</span><span class="n">command_line_arguments</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">command_line_arguments</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_SourceOptions</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores video source options.</span>
+
+<span class="sd">    See the HandBrakeCLI documentation for more information:</span>
+<span class="sd">    https://handbrake.fr/docs/en/latest/cli/command-line-reference.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_file</span>
+<span class="sd">            The location of the video source, either a DVD or Blu-ray disc image in `.iso` format or a video file.</span>
+<span class="sd">        title</span>
+<span class="sd">            The video title to convert.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+        <span class="n">_ValidatePath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_input</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">previews</span> <span class="o">=</span> <span class="s2">&quot;1:0&quot;</span>  <span class="c1"># Handbrake encoder must make at least one preview in order to run, but I don&#39;t otherwise need them</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Source options:</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Input: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_input</span><span class="o">.</span><span class="n">original</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Title: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">construct_terminal_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the options as a set of HandBrakeCLI flags and options.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;--input=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_input</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--title=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--previews=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">previews</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input</span>
+
+    <span class="nd">@input</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">_ValidatePath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_input</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_DestinationOptions</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores video destination options.</span>
+
+<span class="sd">    See the HandBrakeCLI documentation for more information:</span>
+<span class="sd">    https://handbrake.fr/docs/en/latest/cli/command-line-reference.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">video_format</span><span class="o">=</span><span class="s2">&quot;av_mp4&quot;</span><span class="p">,</span> <span class="n">markers</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">align_av</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output</span>
+<span class="sd">            The absolute path with filename to where you want the converted video.</span>
+<span class="sd">        video_format</span>
+<span class="sd">            Video container format.</span>
+<span class="sd">        markers</span>
+<span class="sd">            Whether or not to add chapter markers as defined in the source.</span>
+<span class="sd">        optimize</span>
+<span class="sd">            Whether or not to optimize MP4 files for HTTP streaming.</span>
+<span class="sd">        align_av</span>
+<span class="sd">            Whether or not to add audio silence or black video frames to start of streams so that all streams start at</span>
+<span class="sd">            exactly the same time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="n">_ValidateDirectory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">video_format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">markers</span> <span class="o">=</span> <span class="n">markers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span> <span class="o">=</span> <span class="n">optimize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">align_av</span> <span class="o">=</span> <span class="n">align_av</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Destination options:</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Output: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">original</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Video format: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Markers: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">markers</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Optimize: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">markers</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Align A/V: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">align_av</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">construct_terminal_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the options as a set of HandBrakeCLI flags and options.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;--output=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--format=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">markers</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--markers&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--no-markers&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--optimize&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_av</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--align-av&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span>
+
+    <span class="nd">@output</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">_ValidateDirectory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_VideoOptions</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores video encoder options.</span>
+
+<span class="sd">    See the HandBrakeCLI documentation for more information:</span>
+<span class="sd">    https://handbrake.fr/docs/en/latest/cli/command-line-reference.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="o">=</span><span class="s2">&quot;x265&quot;</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="s2">&quot;fast&quot;</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s2">&quot;20&quot;</span><span class="p">,</span> <span class="n">two_pass</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        encoder</span>
+<span class="sd">            The video encoder.</span>
+<span class="sd">        speed</span>
+<span class="sd">            Adjustment to video encoding settings for a particularmspeed/efficiency tradeoff. &quot;fast&quot; is the default and</span>
+<span class="sd">            is usually a good choice.</span>
+<span class="sd">        quality</span>
+<span class="sd">            Video quality factor. &quot;20&quot; is best for SD video, &quot;22&quot; for HD video.</span>
+<span class="sd">        two_pass</span>
+<span class="sd">            Whether or not to do an initial pass through the video to further optimize the conversion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">quality</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">two_pass</span> <span class="o">=</span> <span class="n">two_pass</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Video options:</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Encoder: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Speed (encoder preset): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Quality: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Two-pass: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">two_pass</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+               <span class="sa">f</span><span class="s2">&quot;   Framerate: variable&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">construct_terminal_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;--encoder=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--encoder-preset=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--quality=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--vfr&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">two_pass</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--two-pass&quot;</span><span class="p">)</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--turbo&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_AudioOptions</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores audio encoder options.</span>
+
+<span class="sd">    See the HandBrakeCLI documentation for more information:</span>
+<span class="sd">    https://handbrake.fr/docs/en/latest/cli/command-line-reference.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">audio_titles</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="n">encoder</span><span class="o">=</span><span class="s2">&quot;ca_aac&quot;</span><span class="p">,</span> <span class="n">bitrates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mixdowns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_rates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        audio_titles</span>
+<span class="sd">            The audio tracks to include (for instance, &quot;1,2&quot; might be the main audio (track 1) and a director&#39;s</span>
+<span class="sd">            commentary (track 2)).</span>
+<span class="sd">        encoder</span>
+<span class="sd">            The audio encoder.</span>
+<span class="sd">        bitrates</span>
+<span class="sd">            The bitrates for the audio tracks in kbps, separated by a comma. Use 64-bits per channel, so 128 kbps for</span>
+<span class="sd">            stereo, 384 for 5.1 surround sound and 512 for 7.1 surround sound. For a 5.1 surround sound main track and a</span>
+<span class="sd">            stereo director&#39;s commentary, this would look like &quot;384,128&quot;.</span>
+<span class="sd">        mixdowns</span>
+<span class="sd">            Format(s) for audio downmixing/upmixing. For the example in bitrates, this would be &quot;5point1,stereo&quot;.</span>
+<span class="sd">        sample_rates</span>
+<span class="sd">            Sample rate in kHz. A good choice is probably 48 if you want to manually define it, otherwise it will</span>
+<span class="sd">            automatically determine an appropriate rate.</span>
+<span class="sd">        names</span>
+<span class="sd">            The audio track names, separated by a comma. For the example above, this might be 5.1 Surround Sound,&quot;Commentary by Director</span>
+<span class="sd">            XXX XXX, Producer YYY YYY and Screenwriter ZZZ ZZZ&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">audio_titles</span> <span class="o">=</span> <span class="n">audio_titles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bitrates</span> <span class="o">=</span> <span class="n">bitrates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mixdowns</span> <span class="o">=</span> <span class="n">mixdowns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sample_rates</span> <span class="o">=</span> <span class="n">sample_rates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_names</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Audio options:</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Audio titles: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">audio_titles</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Encoder: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Bitrate(s) (kbps): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bitrates</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Mixdown(s): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mixdowns</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Sample rate(s) (kHz): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_rates</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Track name(s): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">original</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">print_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="s1">&#39;Same as source&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span>
+
+    <span class="nd">@names</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_names</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">construct_terminal_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;--audio=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">audio_titles</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--aencoder=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitrates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--ab=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bitrates</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixdowns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--mixdown=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mixdowns</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--arate=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_rates</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">!=</span> <span class="s1">&#39;None&#39;</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;--aname=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_PictureOptions</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores video picture options.</span>
+
+<span class="sd">    See the HandBrakeCLI documentation for more information:</span>
+<span class="sd">    https://handbrake.fr/docs/en/latest/cli/command-line-reference.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">crop</span><span class="o">=</span><span class="s2">&quot;0:0:0:0&quot;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        width</span>
+<span class="sd">            The width of the converted video in pixels.</span>
+<span class="sd">        height</span>
+<span class="sd">            The height of the converted video in pixels.</span>
+<span class="sd">        crop</span>
+<span class="sd">            How much to crop off of either side (if there are any black bars or something). Format is</span>
+<span class="sd">            &quot;top:bottom:left:right&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crop</span> <span class="o">=</span> <span class="n">crop</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Picture options:</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Width: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Height: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Crop: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">crop</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Anamorphic: off</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Comb-detection: on</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                       <span class="sa">f</span><span class="s2">&quot;   Decomb method: bob&quot;</span>
+        <span class="k">return</span> <span class="n">print_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="s1">&#39;Same as source&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">construct_terminal_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;--non-anamorphic&quot;</span><span class="p">,</span>
+                   <span class="s2">&quot;--comb-detect&quot;</span><span class="p">,</span>
+                   <span class="s2">&quot;--decomb=</span><span class="se">\&quot;</span><span class="s2">bob</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;--crop </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">crop</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--width=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--display-width=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--height=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_SubtitleOptions</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class stores subtitle options. For now, you can only choose one subtitle track and it is burned-in.</span>
+
+<span class="sd">    See the HandBrakeCLI documentation for more information:</span>
+<span class="sd">    https://handbrake.fr/docs/en/latest/cli/command-line-reference.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subtitle_tracks</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subtitle_tracks</span>
+<span class="sd">            The subtitle track to burn-in.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">subtitles</span> <span class="o">=</span> <span class="n">subtitle_tracks</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">subtitles</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">print_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Subtitle options:</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                           <span class="sa">f</span><span class="s2">&quot;   Track: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">subtitles</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>\
+                           <span class="sa">f</span><span class="s2">&quot;   Burned-in: on&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">print_string</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">print_string</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">construct_terminal_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">subtitles</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--subtitle=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">subtitles</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--subtitle-burned&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="VideoConverter"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.VideoConverter">[docs]</a><span class="k">class</span> <span class="nc">VideoConverter</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class sets up HandBrakeCLI command-line flags and provides a method for initiating video conversion using the</span>
+<span class="sd">    stored parameters. These parameters can be changed after creating an instance of the class. The default behavior is</span>
+<span class="sd">    to convert the video with the same parameters as the source.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_filepath</span>
+<span class="sd">            The location of the video source, either a DVD or Blu-ray disc image in `.iso` format or a video file like</span>
+<span class="sd">            an MP4 or MKV.</span>
+<span class="sd">        output_filepath</span>
+<span class="sd">            The absolute path with filename of the name/extension and location of the converted video.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        To setup a video conversion, create an instance of the VideoConverter class:</span>
+
+<span class="sd">        &gt;&gt;&gt; converter = VideoConverter(&quot;/path/to/disc.iso&quot;, &quot;/path/to/output.mp4&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; print(converter)</span>
+<span class="sd">        Video converter settings:</span>
+<span class="sd">        ------------------------</span>
+<span class="sd">        Source options:</span>
+<span class="sd">           Input: /path/to/disc.iso</span>
+<span class="sd">           Title: 1</span>
+<span class="sd">        Destination options:</span>
+<span class="sd">           Output: /path/to/output.mp4</span>
+<span class="sd">           Video format: av_mp4</span>
+<span class="sd">           Markers: True</span>
+<span class="sd">           Optimize: True</span>
+<span class="sd">           Align A/V: True</span>
+<span class="sd">        Video options:</span>
+<span class="sd">           Encoder: x265</span>
+<span class="sd">           Speed (encoder preset): fast</span>
+<span class="sd">           Quality: 20</span>
+<span class="sd">           Two-pass: False</span>
+<span class="sd">           Framerate: variable</span>
+<span class="sd">        Audio options:</span>
+<span class="sd">           Audio titles: 1</span>
+<span class="sd">           Encoder: ca_aac</span>
+<span class="sd">           Bitrate(s) (kbps): Same as source</span>
+<span class="sd">           Mixdown(s): Same as source</span>
+<span class="sd">           Sample rate(s) (kHz): Same as source</span>
+<span class="sd">           Track name(s): Same as source</span>
+<span class="sd">        Picture options:</span>
+<span class="sd">           Width: Same as source</span>
+<span class="sd">           Height: Same as source</span>
+<span class="sd">           Crop: 0:0:0:0</span>
+<span class="sd">           Anamorphic: off</span>
+<span class="sd">           Comb-detection: on</span>
+<span class="sd">           Decomb method: bob</span>
+
+<span class="sd">        To change the input title:</span>
+
+<span class="sd">        &gt;&gt;&gt; converter = VideoConverter(&quot;/path/to/disc.iso&quot;, &quot;/path/to/output.mp4&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; converter.source_options.title = &quot;2&quot;</span>
+<span class="sd">        &gt;&gt;&gt; print(converter.source_options.__str__())</span>
+<span class="sd">        Source options:</span>
+<span class="sd">           Input: /path/to/disc.iso</span>
+<span class="sd">           Title: 2</span>
+
+<span class="sd">        You shouldn&#39;t need to change any of the destination options. You have to set the output filepath when creating an</span>
+<span class="sd">        instance of `VideoConverter`, and the settings `video_format`, `markers`, `optimize` and `align_av` are defaults</span>
+<span class="sd">        appropriate for almost all situations.</span>
+
+<span class="sd">        To change the video options:</span>
+
+<span class="sd">        &gt;&gt;&gt; converter = VideoConverter(&quot;/path/to/disc.iso&quot;, &quot;/path/to/output.mp4&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; converter.video_options.encoder = &quot;x264&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.video_options.speed = &quot;ultrafast&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.video_options.quality = &quot;47&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.video_options.two_pass = True</span>
+<span class="sd">        &gt;&gt;&gt; print(converter.video_options.__str__())</span>
+<span class="sd">        Video options:</span>
+<span class="sd">           Encoder: x264</span>
+<span class="sd">           Speed (encoder preset): ultrafast</span>
+<span class="sd">           Quality: 47</span>
+<span class="sd">           Two-pass: True</span>
+<span class="sd">           Framerate: variable</span>
+
+<span class="sd">        To change the audio options (note there is a method for the audio track names):</span>
+
+<span class="sd">        &gt;&gt;&gt; converter = VideoConverter(&quot;/path/to/disc.iso&quot;, &quot;/path/to/output.mp4&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; converter.audio_options.audio_titles = &quot;1,2&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.audio_options.encoder = &quot;ca_aac&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.audio_options.bitrates = &quot;384,128&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.audio_options.mixdowns = &quot;5point1,stereo&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.audio_options.sample_rates = &quot;48,48&quot;</span>
+<span class="sd">        &gt;&gt;&gt; converter.audio_options.names = &quot;5.1 Surround Sound,Stereo&quot;</span>
+<span class="sd">        &gt;&gt;&gt; print(converter.audio_options.__str__())</span>
+<span class="sd">        Audio options:</span>
+<span class="sd">           Audio titles: 1,2</span>
+<span class="sd">           Encoder: ca_aac</span>
+<span class="sd">           Bitrate(s) (kbps): 384,128</span>
+<span class="sd">           Mixdown(s): 5point1,stereo</span>
+<span class="sd">           Sample rate(s) (kHz): 48,48</span>
+<span class="sd">           Track name(s): 5.1 Surround Sound,Stereo</span>
+
+<span class="sd">        To change the picture options:</span>
+
+<span class="sd">        &gt;&gt;&gt; converter = VideoConverter(&quot;/path/to/disc.iso&quot;, &quot;/path/to/output.mp4&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; converter.picture_options.width = &#39;1920&#39;</span>
+<span class="sd">        &gt;&gt;&gt; converter.picture_options.height = &#39;1080&#39;</span>
+<span class="sd">        &gt;&gt;&gt; converter.picture_options.crop = &#39;0:0:20:20&#39;  # cropping 20 pixels from the top and bottom</span>
+<span class="sd">        &gt;&gt;&gt; print(converter.picture_options.__str__())</span>
+<span class="sd">        Picture options:</span>
+<span class="sd">           Width: 1920</span>
+<span class="sd">           Height: 1080</span>
+<span class="sd">           Crop: 0:0:20:20</span>
+<span class="sd">           Anamorphic: off</span>
+<span class="sd">           Comb-detection: on</span>
+<span class="sd">           Decomb method: bob</span>
+
+<span class="sd">        To add a subtitle track (for now, it has to be burned-in):</span>
+
+<span class="sd">        &gt;&gt;&gt; converter = VideoConverter(&quot;/path/to/disc.iso&quot;, &quot;/path/to/output.mp4&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; converter.subtitle_options.subtitles = &quot;1&quot;</span>
+<span class="sd">        &gt;&gt;&gt; print(converter.subtitle_options.__str__())</span>
+<span class="sd">        Subtitle options:</span>
+<span class="sd">           Track: 1</span>
+<span class="sd">           Burned-in: on</span>
+
+<span class="sd">        Finally, once you&#39;ve set everything the way you want it, you can begin the video conversion using the method</span>
+<span class="sd">        `convert()`.</span>
+
+<span class="sd">        &gt;&gt;&gt; converter = VideoConverter(&quot;/path/to/disc.iso&quot;, &quot;/path/to/output.mp4&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; converter.convert()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">handbrake_cli</span> <span class="o">=</span> <span class="n">_path_to_system_executable</span><span class="p">(</span><span class="s2">&quot;anc/HandBrakeCLI&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_options</span> <span class="o">=</span> <span class="n">_SourceOptions</span><span class="p">(</span><span class="n">input_filepath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">destination_options</span> <span class="o">=</span> <span class="n">_DestinationOptions</span><span class="p">(</span><span class="n">output_filepath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span> <span class="o">=</span> <span class="n">_VideoOptions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">audio_options</span> <span class="o">=</span> <span class="n">_AudioOptions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span> <span class="o">=</span> <span class="n">_PictureOptions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subtitle_options</span> <span class="o">=</span> <span class="n">_SubtitleOptions</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_string</span> <span class="o">=</span> <span class="s2">&quot;Video converter settings:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">print_string</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_options</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">destination_options</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">subtitle_options</span><span class="o">.</span><span class="n">subtitles</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">print_string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">print_string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subtitle_options</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">print_string</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">print_string</span>
+
+<div class="viewcode-block" id="VideoConverter.convert"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.VideoConverter.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initiates the video conversion with HandBrakeCLI using set input parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        test</span>
+<span class="sd">            If True, does a quick, short conversion of the file to test output and tagging.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="s1">&#39;x264&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="s1">&#39;ultrafast&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="s1">&#39;40&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="mi">320</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">240</span>
+
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">handbrake_cli</span><span class="p">,</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">source_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">(),</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">destination_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">(),</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">(),</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">(),</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">(),</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">subtitle_options</span><span class="o">.</span><span class="n">construct_terminal_commands</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;--start-at=seconds:3&#39;</span><span class="p">)</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;--stop-at=seconds:6&#39;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="video_inspector"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.video_inspector">[docs]</a><span class="k">def</span> <span class="nf">video_inspector</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function prints the existing metadata from an MP4 file in the console using the SublerCLI executable.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source_filepath</span>
+<span class="sd">        The absolute path to the source file.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; video_inspector(&#39;/path/to/video file.mp4&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="n">_path_to_system_executable</span><span class="p">(</span><span class="s2">&quot;anc/SublerCLI&quot;</span><span class="p">),</span>
+               <span class="sa">f</span><span class="s2">&quot;-source </span><span class="si">{</span><span class="n">_EscapedString</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+               <span class="sa">f</span><span class="s2">&quot;-listmetadata&quot;</span><span class="p">]</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">_create_metadata_dictionaries</span><span class="p">(</span><span class="n">keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function takes a set of metadata keys and values and converts them into a dictionaries for HandBrake and</span>
+<span class="sd">    Subler settings.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    keys</span>
+<span class="sd">        An iterable of dictionary keys.</span>
+<span class="sd">    values</span>
+<span class="sd">        An iterable of values for the dictionary keys.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; metadata = _MetadataLoader(&quot;/path/to/metadata.xlsx&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; line = 17</span>
+<span class="sd">    &gt;&gt;&gt; keys_list = metadata.get_keys()</span>
+<span class="sd">    &gt;&gt;&gt; values_list = metadata.get_values(line)</span>
+<span class="sd">    &gt;&gt;&gt; handbrake_dict, subler_dict = _create_metadata_dictionaries(keys_list, values_list)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">excluded_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Source&quot;</span><span class="p">,</span> <span class="s2">&quot;Title&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio&quot;</span><span class="p">,</span> <span class="s2">&quot;Dimensions&quot;</span><span class="p">,</span> <span class="s2">&quot;Crop&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Notes&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Subtitle&quot;</span><span class="p">,</span> <span class="s2">&quot;Chapters&quot;</span><span class="p">,</span> <span class="s2">&quot;Filename&quot;</span><span class="p">]</span>
+    <span class="n">subler_dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excluded_keys</span><span class="p">}</span>
+    <span class="n">subler_dictionary</span><span class="p">[</span><span class="s1">&#39;Copyright&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\u00A9</span><span class="s1"> </span><span class="si">{</span><span class="n">subler_dictionary</span><span class="p">[</span><span class="s2">&quot;Copyright&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">handbrake_dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">excluded_keys</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">handbrake_dictionary</span><span class="p">,</span> <span class="n">subler_dictionary</span>
+
+
+<span class="k">class</span> <span class="nc">_MetadataLoader</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class loads a Microsoft Excel metadata spreadsheet and returns the keys and values for a particular entry.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_excel_spreadsheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">path_to_excel_spreadsheet</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of the column names from the spreadsheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the line number you want, (index starting from 0).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">line</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">_VideoTagger</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class takes an MP4 file and tags it with metadata.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination_filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source_filepath</span>
+<span class="sd">            The absolute filepath to the source file (likely a temporary file).</span>
+<span class="sd">        destination_filepath</span>
+<span class="sd">            This is the filename and absolute filepath for the tagged video. Cannot be the same as the source filepath.</span>
+<span class="sd">        metadata</span>
+<span class="sd">            A dictionary of metadata tags and values.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Load metadata from a metadata.xlsx spreadsheet, then apply the video tags for line 17.</span>
+
+<span class="sd">        &gt;&gt;&gt; metadata_dataframe = _MetadataLoader(&quot;/path/to/metadata.xlsx&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; line = 17</span>
+<span class="sd">        &gt;&gt;&gt; keys_list = metadata_dataframe.get_keys()</span>
+<span class="sd">        &gt;&gt;&gt; values_list = metadata_dataframe.get_values(line)</span>
+<span class="sd">        &gt;&gt;&gt; handbrake_dict, subler_dict = _create_metadata_dictionaries(keys_list, values_list)</span>
+<span class="sd">        &gt;&gt;&gt; _VideoTagger(&quot;/path/to/temp17.mp4&quot;, &quot;/path/to/18 Output.mp4&quot;, metadata=subler_dict).tag(remove_input=True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">subler_cli</span> <span class="o">=</span> <span class="n">_path_to_system_executable</span><span class="p">(</span><span class="s2">&quot;anc/SublerCLI&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">destination_filepath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_if_input_and_output_match</span><span class="p">()</span>
+        <span class="n">_ValidateDirectory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_format_metadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">r</span><span class="s1">&#39;{&quot;</span><span class="si">%s</span><span class="s1">&quot;:&quot;</span><span class="si">%s</span><span class="s1">&quot;}&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+
+    <span class="k">def</span> <span class="nf">_check_if_input_and_output_match</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">original</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">original</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Input and output files cannot be the same! Either change the output directory or give the &#39;</span>
+                            <span class="s1">&#39;input file a temporary filename.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remove_input</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">subler_cli</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;-source </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;-dest </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">destination</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;-metadata </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_format_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;-language English&quot;</span><span class="p">]</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">_construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">remove_input</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="empty_metadata_spreadsheet"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.empty_metadata_spreadsheet">[docs]</a><span class="k">def</span> <span class="nf">empty_metadata_spreadsheet</span><span class="p">(</span><span class="n">save_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function saves an empty Microsoft Excel metadata spreadsheet for you to fill in. Note that not all fields need</span>
+<span class="sd">    to be filled out for each item or even an entire spreadsheet, but are the recommended fields for the video type.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    save_directory</span>
+<span class="sd">        The directory in which you want the empty spreadsheet saved.</span>
+<span class="sd">    kind</span>
+<span class="sd">        The kind of spreadsheet (choose between &quot;tv&quot; or &quot;movie&quot;).</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    For a TV spreadsheet:</span>
+
+<span class="sd">    &gt;&gt;&gt; empty_metadata_spreadsheet(&quot;/path/to/directory&quot;, kind=&#39;TV&#39;)</span>
+<span class="sd">    Empty spreadsheet saved to &quot;/path/to/directory/empty_metadata_tv.xlsx.&quot;</span>
+
+<span class="sd">    For a movie spreadsheet:</span>
+
+<span class="sd">    &gt;&gt;&gt; empty_metadata_spreadsheet(&quot;/path/to/directory&quot;, kind=&#39;movie&#39;)</span>
+<span class="sd">    Empty spreadsheet saved to &quot;/path/to/directory/empty_metadata_movie.xlsx.&quot;</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    TV Shows:</span>
+<span class="sd">     - **Name:** The episode title.</span>
+<span class="sd">     - **Artist:** The name of the series.</span>
+<span class="sd">     - **Album Artist:** The name of the series.</span>
+<span class="sd">     - **Album:** The name of the series and the season number, e.g., &quot;Star Trek, Season 1.&quot;</span>
+<span class="sd">     - **Genre:** Your choice, e.g., &quot;Science Fiction&quot; or &quot;Situation Comedy.&quot;</span>
+<span class="sd">     - **Release Date:** The date of first broadcast in format YYYY-MM-DD. If it&#39;s a special feature, I usually do the</span>
+<span class="sd">       release date of the media I&#39;m getting the video from, like the DVD or Blu-ray release date.</span>
+<span class="sd">     - **Track #:** For episodes, I use the format #/total, so episode 7 in a season of 22 episodes would be &quot;7/22&quot;. For</span>
+<span class="sd">       special features, I start at 101, so special feature 3 out of 12 would be &quot;103/112&quot;.</span>
+<span class="sd">     - **TV Show:** The name of the series.</span>
+<span class="sd">     - **TV Episode ID:** The internal production ID for the episode (not all series have one).</span>
+<span class="sd">     - **TV Season:** The season number (just the number).</span>
+<span class="sd">     - **TV Episode #:** The episode number (just the number; if multiple episodes combined into one, I guess just choose</span>
+<span class="sd">       the number of the first episode).</span>
+<span class="sd">     - **TV Network:** The network on which the show originall broadcast. For special features, I usually put &quot;DVD&quot; or</span>
+<span class="sd">       &quot;Blu-ray&quot; depending on the source.</span>
+<span class="sd">     - **Description:** The episode description.</span>
+<span class="sd">     - **Copyright:** The copyright information, e.g., &quot;Production House, LLC. All Rights Reserved.&quot; The copyright symbol</span>
+<span class="sd">       is added automatically behind-the-scenes.</span>
+<span class="sd">     - **Media Kind:** 10 (this indicates a TV show)</span>
+<span class="sd">     - **Cover Art:** The absolute path to the artwork you want for this item.</span>
+<span class="sd">     - **Rating:** For the US, the options are listed below (they are a little hard to find). For a series from another</span>
+<span class="sd">       country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()</span>
+<span class="sd">       function to see what the correct format is.</span>
+
+<span class="sd">          - us-tv|TV-Y|100|</span>
+<span class="sd">          - us-tv|TV-Y7|200|</span>
+<span class="sd">          - us-tv|TV-G|300|</span>
+<span class="sd">          - us-tv|TV-PG|400|</span>
+<span class="sd">          - us-tv|TV-14|500|</span>
+<span class="sd">          - us-tv|TV-MA|600|</span>
+<span class="sd">          - us-tv|Unrated|???|</span>
+
+<span class="sd">     - **Cast:** The names of the main cast members, separated by commas (for names with commas, surround with quotation</span>
+<span class="sd">       marks like, e.g., Patrick Stewart, &quot;Patrick Stewart, Jr.&quot;</span>
+<span class="sd">     - **Filename:** The absolute path to where you want the final video to be saved. I usually prefix the file with it&#39;s</span>
+<span class="sd">       number, e.g., /.../07 Episode 7.mp4 for a main episode or /.../Special Features/103 Special Feature.mp4</span>
+<span class="sd">     - **Source:** The absolute path to the source, either a disc image `.iso` or a video file.</span>
+<span class="sd">     - **Title:** The video title, meaning which video track to convert. Discs have multiple, individual videos are just</span>
+<span class="sd">       title &quot;1&quot;.</span>
+<span class="sd">     - **Dimensions:** The dimensions of the final video separated by an &quot;x&quot;, e.g., &quot;854x480&quot; or &quot;640x480&quot; for SD.</span>
+<span class="sd">     - **Crop:** Some videos files have the letterbox black bars encoded. Crop can remove them if you know the relative</span>
+<span class="sd">       sizes. The format is #:#:#:#, with the numbers referring to &lt;top:bottom:left:right&gt;.</span>
+<span class="sd">     - **Audio:** The audio title(s), separated by a comma. You might want multiple audio tracks (like a commentary).</span>
+<span class="sd">     - **Audio Bitrate:** The bitrates for each of the audio titles, using 64-bits per channel. This means 64 for mono,</span>
+<span class="sd">       128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.</span>
+<span class="sd">     - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.</span>
+<span class="sd">     - **Audio Notes:** What to name the audio tracks, like &quot;Mono Audio&quot;, &quot;Stereo Audio&quot;, &quot;5.1 Surround Sound&quot;,</span>
+<span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. If the name has commas in it, it will need to be in</span>
+<span class="sd">       quotation marks.</span>
+<span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
+<span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
+<span class="sd">       those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
+<span class="sd">       might be &quot;3,The Third Chapter&quot;.</span>
+
+<span class="sd">    Movies:</span>
+<span class="sd">     - **Name:** The name of the movie.</span>
+<span class="sd">     - **Genre:** Your choice, e.g., &quot;Science Fiction&quot; or &quot;Comedy.&quot;</span>
+<span class="sd">     - **Release Date:** The date of the film in format YYYY-MM-DD. If it&#39;s a special feature, I usually do the release</span>
+<span class="sd">       date of the media I&#39;m getting the video from, like the DVD or Blu-ray release date.</span>
+<span class="sd">     - **Description:** The episode description.</span>
+<span class="sd">     - **Copyright:** The copyright information, e.g., &quot;Production House, LLC. All Rights Reserved.&quot; The copyright symbol</span>
+<span class="sd">       is added automatically behind-the-scenes.</span>
+<span class="sd">     - **Media Kind:** 9 (this indicates a movie)</span>
+<span class="sd">     - **Cover Art:** The absolute path to the artwork you want for this item.</span>
+<span class="sd">     - **Rating:** For the US, the options are listed below (they are a little hard to find). For a series from another</span>
+<span class="sd">       country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()</span>
+<span class="sd">       function to see what the correct format is.</span>
+
+<span class="sd">          - mpaa|NR|000|</span>
+<span class="sd">          - mpaa|G|100|</span>
+<span class="sd">          - mpaa|PG|200|</span>
+<span class="sd">          - mpaa|PG-13|300|</span>
+<span class="sd">          - mpaa|R|400|</span>
+<span class="sd">          - mpaa|NC-17|500|</span>
+<span class="sd">          - mpaa|Unrated|???|</span>
+
+<span class="sd">     - **Rating Annotation:** any reasons listed for the given rating, e.g., &quot;violence and sexual content.&quot;</span>
+<span class="sd">     - **Cast:** The names of the main cast members, separated by commas (for names with commas, surround with quotation</span>
+<span class="sd">       marks like, e.g., Patrick Stewart, &quot;Patrick Stewart, Jr.&quot;</span>
+<span class="sd">     - **Director:** The names of the director(s), same comma considerations as with cast.</span>
+<span class="sd">     - **Producers:** The names of the producer(s), same comma considerations as with cast.</span>
+<span class="sd">     - **Screenwriters:** The names of the screenwriter(s), same comma considerations as with cast.</span>
+<span class="sd">     - **Filename:** The absolute path to where you want the final video to be saved. I don&#39;t usually prefix the main</span>
+<span class="sd">       movie file, e.g., /.../Film Name.mp4, but for a special feature /.../Special Features/103 Special Feature.mp4</span>
+<span class="sd">     - **Source:** The absolute path to the source, either a disc image `.iso` or a video file.</span>
+<span class="sd">     - **Title:** The video title, meaning which video track to convert. Discs have multiple, individual videos are just</span>
+<span class="sd">       title &quot;1&quot;.</span>
+<span class="sd">     - **Dimensions:** The dimensions of the final video separated by an &quot;x&quot;, e.g., &quot;854x480&quot; or &quot;640x480&quot; for SD.</span>
+<span class="sd">     - **Crop:** Some videos files have the letterbox black bars encoded. Crop can remove them if you know the relative</span>
+<span class="sd">       sizes. The format is #:#:#:#, with the numbers referring to &lt;top:bottom:left:right&gt;.</span>
+<span class="sd">     - **Audio:** The audio title(s), separated by a comma. You might want multiple audio tracks (like a commentary).</span>
+<span class="sd">     - **Audio Bitrate:** The bitrates for each of the audio titles, using 64-bits per channel. This means 64 for mono,</span>
+<span class="sd">       128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.</span>
+<span class="sd">     - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.</span>
+<span class="sd">     - **Audio Notes:** What to name the audio tracks, like &quot;Mono Audio&quot;, &quot;Stereo Audio&quot;, &quot;5.1 Surround Sound&quot;,</span>
+<span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. If the name has commas in it, it will need to be in</span>
+<span class="sd">       quotation marks. If it has quotation marks it might break entirely. Best to check in advance or be sure to use</span>
+<span class="sd">       single quotes.</span>
+<span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
+<span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
+<span class="sd">       those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
+<span class="sd">       might be &quot;3,The Third Chapter&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tv_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Name&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Artist&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Album Artist&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Album&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Genre&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Release Date&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Track #&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;TV Show&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;TV Episode ID&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;TV Season&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;TV Episode #&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;TV Network&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Description&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Copyright&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Media Kind&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Cover Art&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Rating&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Cast&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Filename&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Source&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Title&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Audio&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Dimensions&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Crop&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Audio Bitrate&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Audio Mixdown&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Audio Notes&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Subtitle&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Chapters&#39;</span><span class="p">]</span>
+
+    <span class="n">movie_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Name&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Genre&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Release Date&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Description&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Copyright&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Media Kind&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Cover Art&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Rating&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Rating Annotation&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Cast&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Director&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Producers&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Screenwriters&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Filename&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Source&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Title&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Audio&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Dimensions&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Crop&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Audio Bitrate&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Audio Mixdown&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Audio Notes&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Subtitle&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Chapters&#39;</span><span class="p">]</span>
+
+    <span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;tv&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;television&#39;</span><span class="p">):</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="s1">&#39;tv&#39;</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="n">tv_columns</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;movie&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;film&#39;</span><span class="p">):</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="s1">&#39;movie&#39;</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="n">movie_columns</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Unrecognized kind.&#39;</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">save_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_directory</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;empty_metadata_</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">.xlsx&quot;</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_excel</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Empty spreadsheet saved to </span><span class="se">\&quot;</span><span class="si">{</span><span class="n">save_path</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">.&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_convert_and_tag_spreadsheet_item</span><span class="p">(</span><span class="n">iterator</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">test</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function actually processes an item from a spreadsheet. It&#39;s designed to be called by multiprocessing, but can</span>
+<span class="sd">    be called in serial, too.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    iterator</span>
+<span class="sd">        The looping iterator.</span>
+<span class="sd">    dataframe</span>
+<span class="sd">        The loaded metadata spreadsheet.</span>
+<span class="sd">    output_directory</span>
+<span class="sd">        The directory where the files are to be saved.</span>
+<span class="sd">    test</span>
+<span class="sd">        Whether or not to do a quick test run to check file tagging and output paths.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># get the line from the metadata</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">iterator</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+
+    <span class="c1"># location for temporary file</span>
+    <span class="n">temporary_file</span> <span class="o">=</span> <span class="n">_EscapedString</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_directory</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;temp</span><span class="si">{</span><span class="n">iterator</span><span class="si">}</span><span class="s2">.mp4&quot;</span><span class="p">))</span>
+
+    <span class="c1"># extract metadata to dictionaries</span>
+    <span class="n">handbrake_metadata</span><span class="p">,</span> <span class="n">subler_metadata</span> <span class="o">=</span> <span class="n">_create_metadata_dictionaries</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+    <span class="c1"># setup a VideoConverter instance and set parameters</span>
+    <span class="n">converter</span> <span class="o">=</span> <span class="n">VideoConverter</span><span class="p">(</span><span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Source&quot;</span><span class="p">],</span> <span class="n">temporary_file</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">source_options</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">audio_titles</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio&quot;</span><span class="p">]</span>
+
+    <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">bitrates</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">]</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">mixdowns</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">]</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">set_audio_names</span><span class="p">(</span><span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Notes&quot;</span><span class="p">])</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># convert the video</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">)</span>
+
+    <span class="c1"># tag temporary video</span>
+    <span class="n">output_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_directory</span><span class="p">,</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Filename&quot;</span><span class="p">])</span>
+    <span class="n">_VideoTagger</span><span class="p">(</span><span class="n">temporary_file</span><span class="o">.</span><span class="n">original</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">subler_metadata</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">remove_input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_appropriate_number_of_cores</span><span class="p">():</span>
+    <span class="n">n_cores</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">n_cores</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">n_cores</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">n_cores</span>
+
+
+<span class="k">def</span> <span class="nf">_set_processor_pool</span><span class="p">(</span><span class="n">n_cores</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    mp.get_context(&#39;fork&#39;) allows parallel processing without &#39;if __name__ == &#39;__main__&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">mp</span><span class="o">.</span><span class="n">get_context</span><span class="p">(</span><span class="s1">&#39;fork&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">n_cores</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_asynchronous_process_spreadsheet</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">data</span><span class="p">)):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">,</span> <span class="n">test</span><span class="p">)</span>
+        <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_convert_and_tag_spreadsheet_item</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    No one knows what these do...but things don&#39;t work without them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="process_spreadsheet"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.process_spreadsheet">[docs]</a><span class="k">def</span> <span class="nf">process_spreadsheet</span><span class="p">(</span><span class="n">path_to_spreadsheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parallel</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">test</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert and tag a metadata spreadsheet using either parallel or serial (non-parallel) processing.</span>
+
+<span class="sd">    **Parallel processing:**</span>
+<span class="sd">    This will process multiple videos simultaneously, one per core. For some reason my 6-core computer comes back</span>
+<span class="sd">    with 12 cores available, so I&#39;ve set this to use half the apparently available cores minus 2. For my 2019 MacBook Pro</span>
+<span class="sd">    with a 6-core i7 processor, this assigns (12/2 - 2) = 4 cores to parallel processing. The two additional cores allows</span>
+<span class="sd">    for you to continue to work on other things that aren&#39;t processor-heavy.</span>
+
+<span class="sd">    **Serial processing:**</span>
+<span class="sd">    This will use multiple cores automatically assigned by your system but will process a single line in the spreadsheet</span>
+<span class="sd">    at a time. This will be faster for a single video file since Handbrake scales well up to 4-6 cores, but for an</span>
+<span class="sd">    larger set of videos you&#39;re probably better off processing in parallel.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path_to_spreadsheet</span>
+<span class="sd">        Absolute path to the spreadsheet.</span>
+<span class="sd">    output_directory</span>
+<span class="sd">        Output directory where you want the final tagged videos.</span>
+<span class="sd">    parallel</span>
+<span class="sd">        Whether or not to process in parallel.</span>
+<span class="sd">    test</span>
+<span class="sd">        Whether or not to do a test run, converting from 00:00:03 to 00:00:06 at low-resolution and very fast speed in</span>
+<span class="sd">        order to test that all the outputs are tagged correctly and go where you expect them to. Useful to run before</span>
+<span class="sd">        initiating a long full-spreadsheet process.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; process_spreadsheet(&#39;/path/to/metadata.xlsx&#39;, &#39;/path/to/output_directory&#39;,</span>
+<span class="sd">    ...                     parallel=True, test=False)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dataframe</span> <span class="o">=</span> <span class="n">_MetadataLoader</span><span class="p">(</span><span class="n">path_to_spreadsheet</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">parallel</span><span class="p">:</span>
+        <span class="n">n_cores</span> <span class="o">=</span> <span class="n">_get_appropriate_number_of_cores</span><span class="p">()</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">_set_processor_pool</span><span class="p">(</span><span class="n">n_cores</span><span class="p">)</span>
+        <span class="n">_asynchronous_process_spreadsheet</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">,</span> <span class="n">test</span><span class="p">)</span>
+        <span class="n">_cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">data</span><span class="p">)):</span>
+            <span class="n">_convert_and_tag_spreadsheet_item</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">,</span> <span class="n">test</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021 by Zachariah Milby.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

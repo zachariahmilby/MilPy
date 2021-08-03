@@ -1,0 +1,813 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>milpy.travel.flight_simulator &mdash; MilPy 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> MilPy
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">The MilPy Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../rst/api_reference.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">MilPy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>milpy.travel.flight_simulator</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for milpy.travel.flight_simulator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Makes an animation of a commercial airline flight on a rotating globe with day and night.&quot;&quot;&quot;</span>
+
+<span class="c1"># TODO: try converting pytz uses to datetime.timezone?</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+
+<span class="kn">import</span> <span class="nn">cartopy.crs</span> <span class="k">as</span> <span class="nn">ccrs</span>
+<span class="kn">import</span> <span class="nn">ephem</span>
+<span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pytz</span>
+<span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">Geod</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry.polygon</span> <span class="kn">import</span> <span class="n">LinearRing</span>
+<span class="kn">from</span> <span class="nn">fuzzywuzzy</span> <span class="kn">import</span> <span class="n">process</span>
+
+<span class="kn">from</span> <span class="nn">milpy.math</span> <span class="kn">import</span> <span class="n">haversine</span>
+
+
+<span class="k">def</span> <span class="nf">_get_current_directory</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_line_from_database</span><span class="p">(</span><span class="n">path_to_database</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query_item</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function takes a relative path to one of the CSV databases, finds the queried item, and returns the row from</span>
+<span class="sd">    the CSV for that item.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path_to_database</span>
+<span class="sd">        Relative path to the database, e.g., &quot;anc/database.csv.&quot;</span>
+<span class="sd">    query_item</span>
+<span class="sd">        What to query from the database, e.g., for an airport, something like &quot;Los Angeles International Airport.&quot;</span>
+<span class="sd">    query_type</span>
+<span class="sd">        What kind of item you are querying. Options are &quot;airline&quot;, &quot;airport,&quot; or &quot;aircraft.&quot;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The line from the CSV as a list of string items.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    Raises exception if the item isn&#39;t found in the CSV. Will print five of the closest options given your input to</span>
+<span class="sd">    check against, but if none of this is what you want, it provides a link to the database for you to search through</span>
+<span class="sd">    manually.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">absolute_path_to_database</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_get_current_directory</span><span class="p">(),</span> <span class="n">path_to_database</span><span class="p">)</span>
+    <span class="n">database</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">absolute_path_to_database</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">database</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">values</span> <span class="o">==</span> <span class="n">query_item</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">possibilities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">query_item</span><span class="p">,</span> <span class="n">values</span><span class="p">))[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">possibilities</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;No matches found.&quot;</span><span class="p">]</span>
+        <span class="n">error_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Could not find </span><span class="si">{</span><span class="n">query_type</span><span class="si">}</span><span class="s2"> </span><span class="se">\&quot;</span><span class="si">{</span><span class="n">query_item</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">. Is one of these the </span><span class="si">{</span><span class="n">query_type</span><span class="si">}</span><span class="s2"> you want?</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">possibility</span> <span class="ow">in</span> <span class="n">possibilities</span><span class="p">:</span>
+            <span class="n">error_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   </span><span class="si">{</span><span class="n">possibility</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">error_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;If not, check your spelling or the database at</span><span class="se">\n</span><span class="s2">   </span><span class="se">\&quot;</span><span class="si">{</span><span class="n">absolute_path_to_database</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_string</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">database</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+
+<span class="c1"># Note: if used by another travel/something.py, these should go into their own file somewhere</span>
+<span class="k">class</span> <span class="nc">_Airline</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;This class gets and stores airline data from the ancillary airlines.csv file.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name</span>
+<span class="sd">            The name of the airline, e.g., &quot;Delta Air Lines&quot; or &quot;United Airlines.&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="n">_get_line_from_database</span><span class="p">(</span><span class="s1">&#39;anc/airlines.csv&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s1">&#39;airline&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alias</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">IATA</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ICAO</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callsign</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Airline Information:</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Name: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Alias: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   IATA Code: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">IATA</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   ICAO Code: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ICAO</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Callsign: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">callsign</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">print_string</span>
+
+
+<span class="k">class</span> <span class="nc">_Airport</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;This class gets and stores airport data from the ancillary airports.csv file.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name</span>
+<span class="sd">            The name of the airport, e.g., &quot;Los Angeles International Airport.&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="n">_get_line_from_database</span><span class="p">(</span><span class="s1">&#39;anc/airports.csv&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s1">&#39;airport&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">city</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">country</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">IATA</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ICAO</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">altitude</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timezone</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Airport Information:</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Name: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   City: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">city</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Country: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">country</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   IATA Code: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">IATA</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   ICAO Code: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ICAO</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Latitude: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">latitude</span><span class="si">}</span><span class="s1">°</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Longitude: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">longitude</span><span class="si">}</span><span class="s1">°</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Altitude: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">altitude</span><span class="o">*</span><span class="mf">3.28084</span><span class="p">)</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> feet</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Timezone: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">timezone</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">print_string</span>
+
+
+<span class="k">class</span> <span class="nc">_Aircraft</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;This class gets and stores aircraft data from the ancillary aircraft.csv file.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name</span>
+<span class="sd">            The name of the aircraft type, e.g., &quot;Airbus A350-900&quot; or &quot;Embraer 175.&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="n">_get_line_from_database</span><span class="p">(</span><span class="s1">&#39;anc/aircraft.csv&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s1">&#39;aircraft&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manufacturer</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ISO</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DAFIF</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Aircraft Information:</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Manufacturer: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">manufacturer</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   Type: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   ISO Code: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ISO</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">print_string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;   DAFIF Code (Obsolete): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">DAFIF</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">print_string</span>
+
+
+<span class="k">def</span> <span class="nf">_calculate_subsolar_position</span><span class="p">(</span><span class="n">date_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function calculates the coordinates of the sub-solar position for a given date/time.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    date_time</span>
+<span class="sd">        The datetime object for which you want to calculate the sub-solar position.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A tuple of (sub-solar latitude, sub-solar longitude) in degrees.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">greenwich</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Observer</span><span class="p">()</span>
+    <span class="n">greenwich</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
+    <span class="n">greenwich</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
+    <span class="n">greenwich</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">date_time</span>
+    <span class="n">sun</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Sun</span><span class="p">(</span><span class="n">greenwich</span><span class="p">)</span>
+    <span class="n">sun</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">greenwich</span><span class="o">.</span><span class="n">date</span><span class="p">)</span>
+    <span class="n">sun_lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">sun</span><span class="o">.</span><span class="n">ra</span> <span class="o">-</span> <span class="n">greenwich</span><span class="o">.</span><span class="n">sidereal_time</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">sun_lon</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">180</span><span class="p">:</span>
+        <span class="n">sun_lon</span> <span class="o">+=</span> <span class="mi">360</span>
+    <span class="k">elif</span> <span class="n">sun_lon</span> <span class="o">&gt;</span> <span class="mi">180</span><span class="p">:</span>
+        <span class="n">sun_lon</span> <span class="o">-=</span> <span class="mi">360</span>
+    <span class="n">sun_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">sun</span><span class="o">.</span><span class="n">dec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sun_lat</span><span class="p">,</span> <span class="n">sun_lon</span>
+
+
+<span class="k">class</span> <span class="nc">_DayNightMapCreator</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;This class creates a cylindrical day/night map of Earth with a 12-degree-wide twilight zone.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sub_solar_latitude</span><span class="p">,</span> <span class="n">sub_solar_longitude</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sub_solar_latitude</span>
+<span class="sd">            The latitude position of the Sun in degrees.</span>
+<span class="sd">        sub_solar_longitude</span>
+<span class="sd">            The longitude position of the Sun in degrees.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_solar_latitude</span> <span class="o">=</span> <span class="n">sub_solar_latitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_solar_longitude</span> <span class="o">=</span> <span class="n">sub_solar_longitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">day_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_to_float_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="s1">&#39;anc/earth_day.jpg&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">night_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_to_float_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="s1">&#39;anc/earth_night.jpg&#39;</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load_image</span><span class="p">(</span><span class="n">path_to_image</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_get_current_directory</span><span class="p">(),</span> <span class="n">path_to_image</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">convert_to_float_image</span><span class="p">(</span><span class="n">image_array</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">image_array</span> <span class="o">/</span> <span class="mi">255</span>
+
+    <span class="k">def</span> <span class="nf">sza</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method creates an 1800x3600 array of angles from the sub-solar position. Any positions with angles below 90°</span>
+<span class="sd">        are day time, from 90° to 102° are twilight, and above 102° are night time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">longitudes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">180</span><span class="p">),</span> <span class="mi">3600</span><span class="p">)</span>
+        <span class="n">latitudes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">90</span><span class="p">),</span> <span class="mi">1800</span><span class="p">)</span>
+        <span class="n">longitudes</span><span class="p">,</span> <span class="n">latitudes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">longitudes</span><span class="p">,</span> <span class="n">latitudes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">haversine</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_solar_latitude</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_solar_longitude</span><span class="p">),</span> <span class="n">latitudes</span><span class="p">,</span> <span class="n">longitudes</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">terminator_mask</span><span class="p">(</span><span class="n">sza_arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method takes an array of solar zenith angles made by the method `self._sza()` and</span>
+<span class="sd">        turns it into an alpha mask.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sza_arr</span>
+<span class="sd">            An cylindrical-map-shaped array of solar zenith angles.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An array of multiplication factors to replicate day/night transition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ind90</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sza_arr</span> <span class="o">&lt;=</span> <span class="mi">90</span><span class="p">)</span>
+        <span class="n">ind108</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sza_arr</span> <span class="o">&gt;</span> <span class="mi">108</span><span class="p">)</span>
+        <span class="n">sza_arr</span> <span class="o">-=</span> <span class="mi">90</span>
+        <span class="n">sza_arr</span> <span class="o">/=</span> <span class="mi">18</span>
+        <span class="n">sza_arr</span><span class="p">[</span><span class="n">ind90</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sza_arr</span><span class="p">[</span><span class="n">ind108</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">sza_arr</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">sza_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">sza_arr</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">sza_arr</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method returns a cylindrical map image of Earth day and night as specified by the subsolar position with a</span>
+<span class="sd">        12-degree-wide twilight zone.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        The cylindrical map image with dimensions (1800, 3600, 3).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">twilight_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminator_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sza</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">day_map</span> <span class="o">*</span> <span class="n">twilight_mask</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">night_map</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">twilight_mask</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">_DayNightMap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;This class creates a cylindrical day/night map of Earth with a 12-degree-wide twilight zone which acts like a</span>
+<span class="sd">    numpy ndarray, so you can display it as-is or access sub-solar latitude and longitude as properties.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sub_solar_latitude</span><span class="p">,</span> <span class="n">sub_solar_longitude</span><span class="p">):</span>
+        <span class="n">cyl_map</span> <span class="o">=</span> <span class="n">_DayNightMapCreator</span><span class="p">(</span><span class="n">sub_solar_latitude</span><span class="p">,</span> <span class="n">sub_solar_longitude</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">()</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cyl_map</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">sub_solar_latitude</span> <span class="o">=</span> <span class="n">sub_solar_latitude</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">sub_solar_longitude</span> <span class="o">=</span> <span class="n">sub_solar_longitude</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">__array_finalize__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_solar_latitude</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;sub_solar_latitude&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_solar_longitude</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;sub_solar_longitude&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_FlightParameters</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;This class stores specific flight parameters and calculates some information needed for the animation.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">departure_airport</span><span class="p">:</span> <span class="n">_Airport</span><span class="p">,</span> <span class="n">departure_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">arrival_airport</span><span class="p">:</span> <span class="n">_Airport</span><span class="p">,</span>
+                 <span class="n">arrival_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        departure_airport</span>
+<span class="sd">            The airport from which you are departing.</span>
+<span class="sd">        departure_time</span>
+<span class="sd">            The local departure date and time with minute precision.</span>
+<span class="sd">        arrival_airport</span>
+<span class="sd">            The airport at which you are arriving.</span>
+<span class="sd">        arrival_time</span>
+<span class="sd">            The local arrival date and time with minute precision.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; flight_example = Flight(departure_airport=_Airport(&quot;Los Angeles International Airport&quot;),</span>
+<span class="sd">        ...                         departure_time=datetime(year=2021, month=7, day=2, hour=18, minute=50),</span>
+<span class="sd">        ...                         arrival_airport=_Airport(&quot;Denver International Airport&quot;),</span>
+<span class="sd">        ...                         arrival_time=datetime(year=2021, month=7, day=2, hour=22, minute=6))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span> <span class="o">=</span> <span class="n">departure_airport</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">departure_time</span> <span class="o">=</span> <span class="n">departure_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span> <span class="o">=</span> <span class="n">arrival_airport</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arrival_time</span> <span class="o">=</span> <span class="n">arrival_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">arrival_time</span> <span class="o">-</span> <span class="n">departure_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_frames</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mi">60</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flight_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_flight_path</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">camera_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_camera_path</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dateline_fix</span><span class="p">(</span><span class="n">coordinates</span><span class="p">):</span>
+        <span class="n">longitude</span> <span class="o">=</span> <span class="n">coordinates</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">latitude</span> <span class="o">=</span> <span class="n">coordinates</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">longitude</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">175</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">longitude</span> <span class="o">&gt;</span> <span class="mi">175</span><span class="p">)))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">longitude</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">longitude</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">+=</span> <span class="mi">360</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">longitude</span><span class="p">,</span> <span class="n">latitude</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">def</span> <span class="nf">calculate_flight_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method calculates the great-circle flight path between the two airports in steps of 1 minute based on the</span>
+<span class="sd">        departure and arrival times.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An array of flight path coordinates with shape (n, 2). The first entry in axis 1 is longitude, the second is</span>
+<span class="sd">        latitude.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">geod</span> <span class="o">=</span> <span class="n">Geod</span><span class="p">(</span><span class="s2">&quot;+ellps=WGS84&quot;</span><span class="p">)</span>
+        <span class="n">flight_path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">geod</span><span class="o">.</span><span class="n">npts</span><span class="p">(</span><span class="n">lon1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span> <span class="n">lat1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                                         <span class="n">lon2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span> <span class="n">lat2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                                         <span class="n">npts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_frames</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dateline_fix</span><span class="p">(</span><span class="n">flight_path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">calculate_camera_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method calculates the camera position (the central latitude and longitude of the map projection) for each</span>
+<span class="sd">        frame in the animation. It is based on the previously-calculated flight path.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An array of camera coordinate positions with shape (n, 2). The first entry in axis 1 is longitude, the second</span>
+<span class="sd">        is latitude.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">camera_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flight_path</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">lons</span> <span class="o">=</span> <span class="n">camera_path</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">lats</span> <span class="o">=</span> <span class="n">camera_path</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">lats</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lats</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_frames</span><span class="p">)</span>  <span class="c1"># redo latitudes to move straight from start to end</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dateline_fix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Flight"><a class="viewcode-back" href="../../../rst/subpackages/travel/flight_simulator.html#milpy.travel.flight_simulator.Flight">[docs]</a><span class="k">class</span> <span class="nc">Flight</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;This class initates a flight simulation.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">airline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">flight_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">departure_airport</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arrival_airport</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">departure_time</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arrival_time</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">aircraft</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        airline_name</span>
+<span class="sd">            The name of the airline.</span>
+<span class="sd">        flight_number</span>
+<span class="sd">            The flight number.</span>
+<span class="sd">        departure_airport</span>
+<span class="sd">            The airport from which you are departing.</span>
+<span class="sd">        arrival_airport</span>
+<span class="sd">            The airport at which you are arriving.</span>
+<span class="sd">        departure_time</span>
+<span class="sd">            The local departure date/time.</span>
+<span class="sd">        arrival_time</span>
+<span class="sd">            The local arrival date/time.</span>
+<span class="sd">        aircraft</span>
+<span class="sd">            The name of the aircraft type.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            Raised if the item isn&#39;t found in the CSV. Will print five of the closest options given your input to</span>
+<span class="sd">            check against, but if none of this is what you want, it provides a link to the database for you to search</span>
+<span class="sd">            through manually.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; example_flight = Flight(airline_name=&quot;United Airlines&quot;,</span>
+<span class="sd">        ...                         flight_number=2283,</span>
+<span class="sd">        ...                         departure_airport=&quot;Los Angeles International Airport&quot;,</span>
+<span class="sd">        ...                         arrival_airport=&quot;Denver International Airport&quot;,</span>
+<span class="sd">        ...                         departure_time=&quot;July 2, 2021, 6:50 pm&quot;,</span>
+<span class="sd">        ...                         arrival_time=&quot;July 2, 2021, 10:06 pm&quot;,</span>
+<span class="sd">        ...                         aircraft=&quot;Boeing 737 MAX 9&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; print(example_flight)</span>
+<span class="sd">        This flight simulation has the following parameters:</span>
+<span class="sd">           Airline: United Airlines</span>
+<span class="sd">           Origin: Los Angeles (Los Angeles International Airport/LAX)</span>
+<span class="sd">           Destination: Denver (Denver International Airport/DEN)</span>
+<span class="sd">           Departure Time: Fri, Jul 2, 2021, 6:50 PM</span>
+<span class="sd">           Arrival Time: Fri, Jul 2, 2021, 10:06 PM</span>
+<span class="sd">           Aircraft: Boeing 737 MAX 9</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">airline</span> <span class="o">=</span> <span class="n">_Airline</span><span class="p">(</span><span class="n">airline_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flight_number</span> <span class="o">=</span> <span class="n">flight_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span> <span class="o">=</span> <span class="n">_Airport</span><span class="p">(</span><span class="n">departure_airport</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span> <span class="o">=</span> <span class="n">_Airport</span><span class="p">(</span><span class="n">arrival_airport</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">departure_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_time_to_utc</span><span class="p">(</span><span class="n">departure_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">timezone</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arrival_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_time_to_utc</span><span class="p">(</span><span class="n">arrival_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">timezone</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aircraft</span> <span class="o">=</span> <span class="n">_Aircraft</span><span class="p">(</span><span class="n">aircraft</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span> <span class="o">=</span> <span class="n">_FlightParameters</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">departure_time</span><span class="p">,</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrival_time</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">print_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;This flight simulation has the following parameters:</span><span class="se">\n</span><span class="s1">&#39;</span> \
+                       <span class="sa">f</span><span class="s1">&#39;   Airline: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">airline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span> \
+                       <span class="sa">f</span><span class="s1">&#39;   Origin: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">city</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">IATA</span><span class="si">}</span><span class="s1">)</span><span class="se">\n</span><span class="s1">&#39;</span> \
+                       <span class="sa">f</span><span class="s1">&#39;   Destination: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">city</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">IATA</span><span class="si">}</span><span class="s1">)</span><span class="se">\n</span><span class="s1">&#39;</span> \
+                       <span class="sa">f</span><span class="s1">&#39;   Departure Time: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_printable_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">timezone</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span> \
+                       <span class="sa">f</span><span class="s1">&#39;   Arrival Time: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_printable_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">timezone</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span> \
+                       <span class="sa">f</span><span class="s1">&#39;   Aircraft: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aircraft</span><span class="o">.</span><span class="n">manufacturer</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aircraft</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">print_string</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_printable_datetime</span><span class="p">(</span><span class="n">datetime_obj</span><span class="p">,</span> <span class="n">timezone</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">datetime_obj</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">pytz</span><span class="o">.</span><span class="n">timezone</span><span class="p">(</span><span class="n">timezone</span><span class="p">)),</span> <span class="s1">&#39;</span><span class="si">%a</span><span class="s1">, %b </span><span class="si">%d</span><span class="s1">, %Y, %I:%M %p&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; 0&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_highres_orthographic</span><span class="p">(</span><span class="n">projection</span><span class="p">:</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">Projection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method makes the default Cartopy orthographic projection higher resolution, so the polygon shape of the</span>
+<span class="sd">        edge of the globe isn&#39;t as obvious.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        projection</span>
+<span class="sd">            The Cartopy orthographic projection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="mi">6378137</span>  <span class="c1"># radius of Earth in meters</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">projection</span><span class="o">.</span><span class="n">globe</span><span class="o">.</span><span class="n">semimajor_axis</span> <span class="ow">or</span> <span class="n">r</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">projection</span><span class="o">.</span><span class="n">globe</span><span class="o">.</span><span class="n">semiminor_axis</span> <span class="ow">or</span> <span class="n">a</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">3601</span><span class="p">)</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">a</span> <span class="o">*</span> <span class="mf">0.99999</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">b</span> <span class="o">*</span> <span class="mf">0.99999</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t</span><span class="p">)])[</span>
+                 <span class="p">:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">projection</span><span class="o">.</span><span class="n">_boundary</span> <span class="o">=</span> <span class="n">LinearRing</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_convert_time_to_utc</span><span class="p">(</span><span class="n">date_time</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timezone</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method takes a date and time string, makes it timezone-aware, then converts it to UTC.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        date_time</span>
+<span class="sd">            The date/time as a string with the format &quot;Month [D]D, YYYY, [H]H:MM am/pm.&quot;</span>
+<span class="sd">        timezone</span>
+<span class="sd">            The timezone for the date/time string. For a list of all possible timezones, query the pytz package with</span>
+<span class="sd">            `pytz.all_timezones`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A UTC datetime object for the given date/time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date_time</span><span class="p">,</span> <span class="s1">&#39;%B </span><span class="si">%d</span><span class="s1">, %Y, %I:%M %p&#39;</span><span class="p">)</span>
+        <span class="n">tz</span> <span class="o">=</span> <span class="n">pytz</span><span class="o">.</span><span class="n">timezone</span><span class="p">(</span><span class="n">timezone</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">tz</span><span class="o">.</span><span class="n">localize</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">pytz</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_func_animate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">t0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">highres</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is the iterable animation function required by `matplotlib.animation.FuncAnimation`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        iterator</span>
+<span class="sd">            The first argument of this method must be the iterator passed by `matplotlib.animation.FuncAnimation`.</span>
+<span class="sd">        t0</span>
+<span class="sd">            The time when the system began making the animation (for printing out progress report).</span>
+<span class="sd">        highres</span>
+<span class="sd">            Whether or not to display the surface map in native Cartopy resolution (which for some reason is 700x1400),</span>
+<span class="sd">            or the higher resolution of the video itself (currently 1280x2560).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># remove any existing axes</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+        <span class="c1"># print progress report</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+        <span class="n">m</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="n">h</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Generating frame </span><span class="si">{</span><span class="n">iterator</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">n_frames</span><span class="si">}</span><span class="s1"> &#39;</span>
+              <span class="sa">f</span><span class="s1">&#39;(</span><span class="si">{</span><span class="p">(</span><span class="n">iterator</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">n_frames</span> <span class="o">*</span> <span class="mf">100.</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">%), &#39;</span>
+              <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="si">:</span><span class="s1">0&gt;2</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">:</span><span class="s1">0&gt;2</span><span class="si">}</span><span class="s1"> elapsed...&#39;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="mi">20</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># create high-resolution orthographic projection and place in an axis; also define the coordinate transform</span>
+        <span class="n">projection</span> <span class="o">=</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">Orthographic</span><span class="p">(</span><span class="n">central_longitude</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">camera_path</span><span class="p">[</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                                       <span class="n">central_latitude</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">camera_path</span><span class="p">[</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_highres_orthographic</span><span class="p">(</span><span class="n">projection</span><span class="p">)</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">()</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span> <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+
+        <span class="c1"># define imshow parameters</span>
+        <span class="n">imshow_params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;extent&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span> <span class="s1">&#39;origin&#39;</span><span class="p">:</span> <span class="s1">&#39;upper&#39;</span><span class="p">,</span> <span class="s1">&#39;transform&#39;</span><span class="p">:</span> <span class="n">transform</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">highres</span><span class="p">:</span>
+            <span class="n">imshow_params</span><span class="p">[</span><span class="s1">&#39;regrid_shape&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1280</span><span class="p">,</span> <span class="mi">2560</span><span class="p">)</span>
+
+        <span class="c1"># display the Earth surface image for current time in the flight</span>
+        <span class="n">sub_solar_latitude</span><span class="p">,</span> <span class="n">sub_solar_longitude</span> <span class="o">=</span> <span class="n">_calculate_subsolar_position</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">iterator</span><span class="p">))</span>
+        <span class="n">surface_image</span> <span class="o">=</span> <span class="n">_DayNightMap</span><span class="p">(</span><span class="n">sub_solar_latitude</span><span class="p">,</span> <span class="n">sub_solar_longitude</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">surface_image</span><span class="p">,</span> <span class="o">**</span><span class="n">imshow_params</span><span class="p">)</span>
+
+        <span class="c1"># plot the red flight path and point indicating the position of the plane</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">flight_path</span><span class="p">[:</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">flight_path</span><span class="p">[:</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;tab:red&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">flight_path</span><span class="p">[</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">flight_path</span><span class="p">[</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span>
+                   <span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;tab:red&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+
+        <span class="c1"># place text</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+        <span class="n">text_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">transform</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">transFigure</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">meta_text</span> <span class="o">=</span> <span class="p">[</span><span class="sa">fr</span><span class="s1">&#39;$\bf Origin:$ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">IATA</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">,</span>
+                     <span class="sa">fr</span><span class="s1">&#39;$\bf Destination:$ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">IATA</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">,</span>
+                     <span class="sa">fr</span><span class="s2">&quot;$\bf Departure\ Time:$ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_printable_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">timezone</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                     <span class="sa">fr</span><span class="s2">&quot;$\bf Arrival\ Time:$ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_printable_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">timezone</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                     <span class="sa">fr</span><span class="s1">&#39;$\bf Aircraft:$ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aircraft</span><span class="o">.</span><span class="n">manufacturer</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aircraft</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                     <span class="sa">fr</span><span class="s1">&#39;$\bf Flight\ Time\ Elapsed:$ </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="nb">divmod</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">60</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s1">h </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="nb">divmod</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">60</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span><span class="si">:</span><span class="s1">0&gt;2</span><span class="si">}</span><span class="s1">m&#39;</span><span class="p">,</span>
+                     <span class="p">]</span>
+        <span class="n">title_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">airline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> Flight </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_number</span><span class="si">}</span><span class="s1"> from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_airport</span><span class="o">.</span><span class="n">city</span><span class="si">}</span><span class="s1"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arrival_airport</span><span class="o">.</span><span class="n">city</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.025</span><span class="p">,</span> <span class="mf">0.975</span><span class="p">,</span> <span class="n">title_string</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s1">&#39;bold&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;10&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">transFigure</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;top&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.025</span><span class="p">,</span> <span class="mf">0.9725</span> <span class="o">-</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">meta_text</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="o">**</span><span class="n">text_params</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">meta_text</span><span class="p">))]</span>
+
+<div class="viewcode-block" id="Flight.animate"><a class="viewcode-back" href="../../../rst/subpackages/travel/flight_simulator.html#milpy.travel.flight_simulator.Flight.animate">[docs]</a>    <span class="k">def</span> <span class="nf">animate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">highres</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method generates and saves an animation of the simulated flight.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        save_directory</span>
+<span class="sd">            The absolute path to the directory where you want to save the animation.</span>
+<span class="sd">        highres</span>
+<span class="sd">            Whether or not you want the animation to be at better resolution.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; example_flight = Flight(airline_name=&quot;United Airlines&quot;,</span>
+<span class="sd">        ...                         flight_number=2283,</span>
+<span class="sd">        ...                         departure_airport=&quot;Los Angeles International Airport&quot;,</span>
+<span class="sd">        ...                         departure_time=&quot;July 2, 2021, 6:50 pm&quot;,</span>
+<span class="sd">        ...                         arrival_airport=&quot;Denver International Airport&quot;,</span>
+<span class="sd">        ...                         arrival_time=&quot;July 2, 2021, 10:06 pm&quot;,</span>
+<span class="sd">        ...                         aircraft=&quot;Boeing 737 MAX 9&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; example_flight.animate(&#39;/absolute/path/to/save/directory&#39;, highres=False)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># print flight information</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
+
+        <span class="c1"># record starting time</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># make a figure and set the coordinate transform</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+
+        <span class="c1"># make the animation</span>
+        <span class="n">ani</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func_animate</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_parameters</span><span class="o">.</span><span class="n">n_frames</span><span class="p">,</span>
+                                      <span class="n">fargs</span><span class="o">=</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">highres</span><span class="p">),</span> <span class="n">interval</span><span class="o">=</span><span class="mf">41.67</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># make the filename and path for saving</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">highres</span><span class="p">:</span>
+            <span class="n">ext</span> <span class="o">=</span> <span class="s1">&#39;_highres&#39;</span>
+        <span class="n">save_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">airline</span><span class="o">.</span><span class="n">ICAO</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">flight_number</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">departure_time</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="si">}{</span><span class="n">ext</span><span class="si">}</span><span class="s2">.mp4&quot;</span>
+
+        <span class="c1"># save the animation</span>
+        <span class="n">ani</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_directory</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">savefig_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;facecolor&#39;</span><span class="p">:</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_facecolor</span><span class="p">()})</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021 by Zachariah Milby.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
