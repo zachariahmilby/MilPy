@@ -114,7 +114,6 @@ class _SourceOptions:
         self._input = _EscapedString(input_file)
         _ValidatePath(self._input.original)
         self.title = title
-        self.previews = "1:0"  # Handbrake encoder must make at least one preview in order to run, but I don't otherwise need them
 
     def __str__(self):
         return f"Source options:\n"\
@@ -131,8 +130,7 @@ class _SourceOptions:
         """
 
         options = [f"--input={self._input}",
-                   f"--title={self.title}",
-                   f"--previews={self.previews}"]
+                   f"--title={self.title}"]
         return _construct_terminal_commands(options)
 
     @property
