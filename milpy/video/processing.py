@@ -71,7 +71,7 @@ class _EscapedString(str):
 
     @staticmethod
     def _add_backslashes_before_special_characters(string: str) -> str:
-        special_characters = '|&:;()<>~*@?!$#"` ' + "'"
+        special_characters = '\|&:;()<>~*@?!$#"` ' + "'"
         for i in special_characters:
             string = string.replace(i, rf'\{i}')
         return string
