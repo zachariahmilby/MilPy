@@ -853,10 +853,12 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
          - "2" = 1080p HD
          - "3" = 4K UHD
 
-     - **Quality Factor:** Handbrake quality factor.
+     - **Quality Factor:** Handbrake quality factor (±2).
 
-          - 20 for SD video (e.g., 480p, 576p)
-          - 22 for HD video (720p, 1080p, 2160p)
+          - 20 for 480p/576p Standard Definition
+          - 21 for 720p High Definition
+          - 22 for 1080p Full High Definition
+          - 25 for 2160p 4K Ultra High Definition
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
@@ -914,10 +916,12 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
           - "2" = 1080p HD
           - "3" = 4K UHD
 
-     - **Quality Factor:** Handbrake quality factor.
+     - **Quality Factor:** Handbrake quality factor (±2).
 
-          - 20 for SD video (e.g., 480p, 576p)
-          - 22 for HD video (720p, 1080p, 2160p)
+          - 20 for 480p/576p Standard Definition
+          - 21 for 720p High Definition
+          - 22 for 1080p Full High Definition
+          - 25 for 2160p 4K Ultra High Definition
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
@@ -995,8 +999,7 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
     else:
         raise Exception('Unrecognized kind.')
 
-    note = ['Make sure you change all cells to "Text" to avoid any Excel automated formatting shit.']
-    [note.append('') for i in range(len(columns)-1)]
+    note = ['Make sure you change all cells to "Text" to avoid any Excel automated formatting shit.'].extend(['']*(len(columns)-1))
     df = pd.DataFrame([note], columns=columns)
     save_path = os.path.join(save_directory, f"empty_metadata_{kind}.xlsx")
     df.to_excel(save_path, index=False)
