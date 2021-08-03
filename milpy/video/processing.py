@@ -43,34 +43,41 @@ class _ValidateDirectory(str):
 
 
 class _EscapedString(str):
+    r"""Create a string with backslashes before special characters.
+
+    This class will place a backslash before any of the following characters:
+    |&:;()<>~*@?!$#"` '. It is particularly beneficial for creating paths to
+    terminal files.
+
+    Parameters
+    ----------
+    content
+        Any string.
+
+    Examples
+    --------
+    Make the string of a movie into its terminal representation
+
+    >>> print(_EscapedString('/path/to/file with ?$:"'))
+    /path/to/file\ with\ \?\$\:\"
 
     """
-    This class converts a string to its escaped counterpart, removing any terminal ambiguity.
-    """
 
-    def __new__(cls, content, *args, **kwargs):
-        cls._original = content
-        escaped_string = cls.escape(content)
-        return str.__new__(cls, escaped_string, *args, **kwargs)
+    def __new__(cls, content: str):
+        escape_str = cls._add_backslashes_before_special_characters(content)
+        obj = super().__new__(cls, escape_str)
+        obj._original = content
+        return obj
 
     @staticmethod
-    def escape(string: str) -> str:
-
-        """
-        This method escapes a string so it is unambiguous for the command line.
-        """
-
-        escape_characters = ['|', '&', ':', ';', '(', ')', '<', '>', '~', '*', '@', '?', '!', '$', '#', "'", '"',
-                             '`', ' ']
-        escaped_characters = [r'\|', r'\&', r'\:', r'\;', r'\(', r'\)', r'\<', r'\>', r'\~', r'\*', r'\@', r'\?',
-                              r'\!', r'\$', r'\#', r"\'", r'\"', r'\`', r'\ ']
-        for esc in range(len(escape_characters)):
-            string = string.replace(escape_characters[esc], escaped_characters[esc])
-
+    def _add_backslashes_before_special_characters(string: str) -> str:
+        special_characters = '|&:;()<>~*@?!$#"` ' + "'"
+        for i in special_characters:
+            string = string.replace(i, rf'\{i}')
         return string
 
     @property
-    def original(self):
+    def original(self) -> str:
         return self._original
 
 

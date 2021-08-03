@@ -199,34 +199,41 @@
 
 
 <span class="k">class</span> <span class="nc">_EscapedString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Create a string with backslashes before special characters.</span>
 
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This class converts a string to its escaped counterpart, removing any terminal ambiguity.</span>
+<span class="sd">    This class will place a backslash before any of the following characters:</span>
+<span class="sd">    |&amp;:;()&lt;&gt;~*@?!$#&quot;` &#39;. It is particularly beneficial for creating paths to</span>
+<span class="sd">    terminal files.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    content</span>
+<span class="sd">        Any string.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Make the string of a movie into its terminal representation</span>
+
+<span class="sd">    &gt;&gt;&gt; print(_EscapedString(&#39;/path/to/file with ?$:&quot;&#39;))</span>
+<span class="sd">    /path/to/file\ with\ \?\$\:\&quot;</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">cls</span><span class="o">.</span><span class="n">_original</span> <span class="o">=</span> <span class="n">content</span>
-        <span class="n">escaped_string</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">escaped_string</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">escape_str</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_add_backslashes_before_special_characters</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">escape_str</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_original</span> <span class="o">=</span> <span class="n">content</span>
+        <span class="k">return</span> <span class="n">obj</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">escape</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method escapes a string so it is unambiguous for the command line.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">escape_characters</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;|&#39;</span><span class="p">,</span> <span class="s1">&#39;&amp;&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;;&#39;</span><span class="p">,</span> <span class="s1">&#39;(&#39;</span><span class="p">,</span> <span class="s1">&#39;)&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;~&#39;</span><span class="p">,</span> <span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="s1">&#39;@&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="s1">&#39;!&#39;</span><span class="p">,</span> <span class="s1">&#39;$&#39;</span><span class="p">,</span> <span class="s1">&#39;#&#39;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">,</span>
-                             <span class="s1">&#39;`&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">]</span>
-        <span class="n">escaped_characters</span> <span class="o">=</span> <span class="p">[</span><span class="sa">r</span><span class="s1">&#39;\|&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&amp;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\:&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\(&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\)&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&lt;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&gt;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\~&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\*&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\@&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\?&#39;</span><span class="p">,</span>
-                              <span class="sa">r</span><span class="s1">&#39;\!&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\#&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\&#39;&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\&quot;&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\`&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\ &#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">esc</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">escape_characters</span><span class="p">)):</span>
-            <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">escape_characters</span><span class="p">[</span><span class="n">esc</span><span class="p">],</span> <span class="n">escaped_characters</span><span class="p">[</span><span class="n">esc</span><span class="p">])</span>
-
+    <span class="k">def</span> <span class="nf">_add_backslashes_before_special_characters</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">special_characters</span> <span class="o">=</span> <span class="s1">&#39;|&amp;:;()&lt;&gt;~*@?!$#&quot;` &#39;</span> <span class="o">+</span> <span class="s2">&quot;&#39;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">special_characters</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="sa">rf</span><span class="s1">&#39;\</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">string</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">original</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">original</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original</span>
 
 
