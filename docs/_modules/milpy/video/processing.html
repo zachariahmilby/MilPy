@@ -227,7 +227,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_add_backslashes_before_special_characters</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">special_characters</span> <span class="o">=</span> <span class="s1">&#39;|&amp;:;()&lt;&gt;~*@?!$#&quot;` &#39;</span> <span class="o">+</span> <span class="s2">&quot;&#39;&quot;</span>
+        <span class="n">special_characters</span> <span class="o">=</span> <span class="s1">&#39;\|&amp;:;()&lt;&gt;~*@?!$#&quot;` &#39;</span> <span class="o">+</span> <span class="s2">&quot;&#39;&quot;</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">special_characters</span><span class="p">:</span>
             <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="sa">rf</span><span class="s1">&#39;\</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">string</span>
@@ -1011,8 +1011,10 @@
 
 <span class="sd">     - **Quality Factor:** Handbrake quality factor.</span>
 
-<span class="sd">          - 20 for SD video (e.g., 480p, 576p)</span>
-<span class="sd">          - 22 for HD video (720p, 1080p, 2160p)</span>
+<span class="sd">          - 20±2 for 480p/576p Standard Definition</span>
+<span class="sd">          - 21±2 for 720p High Definition</span>
+<span class="sd">          - 22±2 for 1080p Full High Definition</span>
+<span class="sd">          - 25±2 for 2160p 4K Ultra High Definition</span>
 
 <span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
 <span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
@@ -1072,8 +1074,10 @@
 
 <span class="sd">     - **Quality Factor:** Handbrake quality factor.</span>
 
-<span class="sd">          - 20 for SD video (e.g., 480p, 576p)</span>
-<span class="sd">          - 22 for HD video (720p, 1080p, 2160p)</span>
+<span class="sd">          - 20±2 for 480p/576p Standard Definition</span>
+<span class="sd">          - 21±2 for 720p High Definition</span>
+<span class="sd">          - 22±2 for 1080p Full High Definition</span>
+<span class="sd">          - 25±2 for 2160p 4K Ultra High Definition</span>
 
 <span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
 <span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
@@ -1152,7 +1156,7 @@
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Unrecognized kind.&#39;</span><span class="p">)</span>
 
     <span class="n">note</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Make sure you change all cells to &quot;Text&quot; to avoid any Excel automated formatting shit.&#39;</span><span class="p">]</span>
-    <span class="p">[</span><span class="n">note</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="n">note</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
     <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">note</span><span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
     <span class="n">save_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_directory</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;empty_metadata_</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">.xlsx&quot;</span><span class="p">)</span>
     <span class="n">df</span><span class="o">.</span><span class="n">to_excel</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
