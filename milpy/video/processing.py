@@ -677,8 +677,8 @@ def _create_metadata_dictionaries(keys: Iterable[str], values: Iterable[str]) ->
     >>> handbrake_dict, subler_dict = _create_metadata_dictionaries(keys_list, values_list)
     """
 
-    excluded_keys = ["Source", "Title", "Audio", "Dimensions", "Crop", "Audio Bitrate", "Audio Mixdown", "Audio Notes",
-                     "Subtitle", "Chapters", "Filename"]
+    excluded_keys = ["Filename", "Source", "Title", "Audio", "Dimensions", "Crop", "Audio Bitrate", "Audio Mixdown", "Audio Notes",
+                     "Subtitle", "Chapters", "Quality Factor"]
     subler_dictionary = {key: value for key, value in zip(keys, values) if key not in excluded_keys}
     subler_dictionary['Copyright'] = f'\u00A9 {subler_dictionary["Copyright"]}'
     handbrake_dictionary = {key: value for key, value in zip(keys, values) if key in excluded_keys}
@@ -815,6 +815,7 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
      - **TV Network:** The network on which the show originall broadcast. For special features, I usually put "DVD" or
        "Blu-ray" depending on the source.
      - **Description:** The episode description.
+     - **Series Description:** A general series description.
      - **Copyright:** The copyright information, e.g., "Production House, LLC. All Rights Reserved." The copyright symbol
        is added automatically behind-the-scenes.
      - **Media Kind:** 10 (this indicates a TV show)
@@ -848,6 +849,18 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
      - **Audio Notes:** What to name the audio tracks, like "Mono Audio", "Stereo Audio", "5.1 Surround Sound",
        "7.1 Surround Sound", or "Commentary with XXX and XXX". If the name has commas in it, it will need to be in
        quotation marks.
+     - **HD Video:** Video definition flag.
+
+         - "0" = SD
+         - "1" = 720p HD
+         - "2" = 1080p HD
+         - "3" = 4K UHD
+
+     - **Quality Factor:** Handbrake quality factor.
+
+          - 20 for SD video (e.g., 480p, 576p)
+          - 22 for HD video (720p, 1080p, 2160p)
+
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
        those names. The format should be "#,name# for each chapter in the video. For instance, the third line in the CSV
@@ -897,6 +910,18 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
        "7.1 Surround Sound", or "Commentary with XXX and XXX". If the name has commas in it, it will need to be in
        quotation marks. If it has quotation marks it might break entirely. Best to check in advance or be sure to use
        single quotes.
+     - **HD Video:** Video definition flag.
+
+          - "0" = SD
+          - "1" = 720p HD
+          - "2" = 1080p HD
+          - "3" = 4K UHD
+
+     - **Quality Factor:** Handbrake quality factor.
+
+          - 20 for SD video (e.g., 480p, 576p)
+          - 22 for HD video (720p, 1080p, 2160p)
+
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
        those names. The format should be "#,name# for each chapter in the video. For instance, the third line in the CSV
@@ -916,6 +941,7 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
                   'TV Episode #',
                   'TV Network',
                   'Description',
+                  'Series Description',
                   'Copyright',
                   'Media Kind',
                   'Cover Art',
@@ -930,6 +956,8 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
                   'Audio Bitrate',
                   'Audio Mixdown',
                   'Audio Notes',
+                  'HD Video',
+                  'Quality Factor',
                   'Subtitle',
                   'Chapters']
 
@@ -955,6 +983,8 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
                      'Audio Bitrate',
                      'Audio Mixdown',
                      'Audio Notes',
+                     'HD Video',
+                     'Quality Factor',
                      'Subtitle',
                      'Chapters']
 
@@ -1006,11 +1036,11 @@ def _convert_and_tag_spreadsheet_item(iterator: int, dataframe: pd.DataFrame, ou
     # setup a VideoConverter instance and set parameters
     converter = VideoConverter(handbrake_metadata["Source"], temporary_file.original)
     converter.source_options.title = handbrake_metadata["Title"]
+    converter.video_options.quality = handbrake_metadata["Quality Factor"]
     converter.audio_options.audio_titles = handbrake_metadata["Audio"]
-
     converter.audio_options.bitrates = handbrake_metadata["Audio Bitrate"]
     converter.audio_options.mixdowns = handbrake_metadata["Audio Mixdown"]
-    converter.audio_options.set_audio_names(handbrake_metadata["Audio Notes"])
+    converter.audio_options.names = handbrake_metadata["Audio Notes"]
     converter.picture_options.width = handbrake_metadata["Dimensions"].split("x")[0]
     converter.picture_options.height = handbrake_metadata["Dimensions"].split("x")[1]
 

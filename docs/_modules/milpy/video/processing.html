@@ -833,8 +833,8 @@
 <span class="sd">    &gt;&gt;&gt; handbrake_dict, subler_dict = _create_metadata_dictionaries(keys_list, values_list)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">excluded_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Source&quot;</span><span class="p">,</span> <span class="s2">&quot;Title&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio&quot;</span><span class="p">,</span> <span class="s2">&quot;Dimensions&quot;</span><span class="p">,</span> <span class="s2">&quot;Crop&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Notes&quot;</span><span class="p">,</span>
-                     <span class="s2">&quot;Subtitle&quot;</span><span class="p">,</span> <span class="s2">&quot;Chapters&quot;</span><span class="p">,</span> <span class="s2">&quot;Filename&quot;</span><span class="p">]</span>
+    <span class="n">excluded_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Filename&quot;</span><span class="p">,</span> <span class="s2">&quot;Source&quot;</span><span class="p">,</span> <span class="s2">&quot;Title&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio&quot;</span><span class="p">,</span> <span class="s2">&quot;Dimensions&quot;</span><span class="p">,</span> <span class="s2">&quot;Crop&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">,</span> <span class="s2">&quot;Audio Notes&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;Subtitle&quot;</span><span class="p">,</span> <span class="s2">&quot;Chapters&quot;</span><span class="p">,</span> <span class="s2">&quot;Quality Factor&quot;</span><span class="p">]</span>
     <span class="n">subler_dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excluded_keys</span><span class="p">}</span>
     <span class="n">subler_dictionary</span><span class="p">[</span><span class="s1">&#39;Copyright&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\u00A9</span><span class="s1"> </span><span class="si">{</span><span class="n">subler_dictionary</span><span class="p">[</span><span class="s2">&quot;Copyright&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="n">handbrake_dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">excluded_keys</span><span class="p">}</span>
@@ -971,6 +971,7 @@
 <span class="sd">     - **TV Network:** The network on which the show originall broadcast. For special features, I usually put &quot;DVD&quot; or</span>
 <span class="sd">       &quot;Blu-ray&quot; depending on the source.</span>
 <span class="sd">     - **Description:** The episode description.</span>
+<span class="sd">     - **Series Description:** A general series description.</span>
 <span class="sd">     - **Copyright:** The copyright information, e.g., &quot;Production House, LLC. All Rights Reserved.&quot; The copyright symbol</span>
 <span class="sd">       is added automatically behind-the-scenes.</span>
 <span class="sd">     - **Media Kind:** 10 (this indicates a TV show)</span>
@@ -1004,6 +1005,18 @@
 <span class="sd">     - **Audio Notes:** What to name the audio tracks, like &quot;Mono Audio&quot;, &quot;Stereo Audio&quot;, &quot;5.1 Surround Sound&quot;,</span>
 <span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. If the name has commas in it, it will need to be in</span>
 <span class="sd">       quotation marks.</span>
+<span class="sd">     - **HD Video:** Video definition flag.</span>
+
+<span class="sd">         - &quot;0&quot; = SD</span>
+<span class="sd">         - &quot;1&quot; = 720p HD</span>
+<span class="sd">         - &quot;2&quot; = 1080p HD</span>
+<span class="sd">         - &quot;3&quot; = 4K UHD</span>
+
+<span class="sd">     - **Quality Factor:** Handbrake quality factor.</span>
+
+<span class="sd">          - 20 for SD video (e.g., 480p, 576p)</span>
+<span class="sd">          - 22 for HD video (720p, 1080p, 2160p)</span>
+
 <span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
 <span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
 <span class="sd">       those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
@@ -1053,6 +1066,18 @@
 <span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. If the name has commas in it, it will need to be in</span>
 <span class="sd">       quotation marks. If it has quotation marks it might break entirely. Best to check in advance or be sure to use</span>
 <span class="sd">       single quotes.</span>
+<span class="sd">     - **HD Video:** Video definition flag.</span>
+
+<span class="sd">          - &quot;0&quot; = SD</span>
+<span class="sd">          - &quot;1&quot; = 720p HD</span>
+<span class="sd">          - &quot;2&quot; = 1080p HD</span>
+<span class="sd">          - &quot;3&quot; = 4K UHD</span>
+
+<span class="sd">     - **Quality Factor:** Handbrake quality factor.</span>
+
+<span class="sd">          - 20 for SD video (e.g., 480p, 576p)</span>
+<span class="sd">          - 22 for HD video (720p, 1080p, 2160p)</span>
+
 <span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
 <span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
 <span class="sd">       those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
@@ -1072,6 +1097,7 @@
                   <span class="s1">&#39;TV Episode #&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;TV Network&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Description&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Series Description&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Copyright&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Media Kind&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Cover Art&#39;</span><span class="p">,</span>
@@ -1086,6 +1112,8 @@
                   <span class="s1">&#39;Audio Bitrate&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Audio Mixdown&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Audio Notes&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;HD Video&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;Quality Factor&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Subtitle&#39;</span><span class="p">,</span>
                   <span class="s1">&#39;Chapters&#39;</span><span class="p">]</span>
 
@@ -1111,6 +1139,8 @@
                      <span class="s1">&#39;Audio Bitrate&#39;</span><span class="p">,</span>
                      <span class="s1">&#39;Audio Mixdown&#39;</span><span class="p">,</span>
                      <span class="s1">&#39;Audio Notes&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;HD Video&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;Quality Factor&#39;</span><span class="p">,</span>
                      <span class="s1">&#39;Subtitle&#39;</span><span class="p">,</span>
                      <span class="s1">&#39;Chapters&#39;</span><span class="p">]</span>
 
@@ -1162,11 +1192,11 @@
     <span class="c1"># setup a VideoConverter instance and set parameters</span>
     <span class="n">converter</span> <span class="o">=</span> <span class="n">VideoConverter</span><span class="p">(</span><span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Source&quot;</span><span class="p">],</span> <span class="n">temporary_file</span><span class="o">.</span><span class="n">original</span><span class="p">)</span>
     <span class="n">converter</span><span class="o">.</span><span class="n">source_options</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">video_options</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Quality Factor&quot;</span><span class="p">]</span>
     <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">audio_titles</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio&quot;</span><span class="p">]</span>
-
     <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">bitrates</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">]</span>
     <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">mixdowns</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">]</span>
-    <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">set_audio_names</span><span class="p">(</span><span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Notes&quot;</span><span class="p">])</span>
+    <span class="n">converter</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Notes&quot;</span><span class="p">]</span>
     <span class="n">converter</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">converter</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
 
