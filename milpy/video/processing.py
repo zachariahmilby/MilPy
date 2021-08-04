@@ -1,14 +1,9 @@
 import os
-import subprocess
-import sys
-import glob
-import numpy as np
 import pandas as pd
-import re
 from typing import Iterable
-import multiprocessing as mp
-from milpy.miscellaneous import _EscapedString, _ValidatePath, _ValidateDirectory
+from milpy.miscellaneous import _EscapedString, _ValidateDirectory
 from milpy.video._handbrake import _construct_terminal_commands, SourceOptions, DestinationOptions, VideoOptions, AudioOptions, PictureOptions, SubtitleOptions
+from milpy.parallel_processing import get_appropriate_number_of_cores, set_processor_pool, cleanup_parallel_processing
 
 
 def _path_to_system_executable(executable: str) -> str:
@@ -248,7 +243,7 @@ def _create_metadata_dictionaries(keys: Iterable[str], values: Iterable[str]) ->
     keys
         An iterable of dictionary keys.
     values
-        An iterable of values for the dictionary keys.
+        An iterable of corresponding values for the dictionary keys.
 
     Examples
     --------
@@ -350,6 +345,107 @@ class _VideoTagger:
 
         if remove_input:
             os.remove(self.source.original)
+
+
+def _convert_and_tag_spreadsheet_item(iterator: int, dataframe: pd.DataFrame, output_directory: str, test: bool):
+
+    """
+    This function actually processes an item from a spreadsheet. It's designed to be called by multiprocessing, but can
+    be called in serial, too.
+
+    Parameters
+    ----------
+    iterator
+        The looping iterator.
+    dataframe
+        The loaded metadata spreadsheet.
+    output_directory
+        The directory where the files are to be saved.
+    test
+        Whether or not to do a quick test run to check file tagging and output paths.
+    """
+
+    # get the line from the metadata
+    row = dataframe.data.iloc[iterator].dropna().to_dict()
+    keys = row.keys()
+    values = row.values()
+
+    # location for temporary file
+    temporary_file = _EscapedString(os.path.join(output_directory, f"temp{iterator}.mp4"))
+
+    # extract metadata to dictionaries
+    handbrake_metadata, subler_metadata = _create_metadata_dictionaries(keys, values)
+
+    # setup a VideoConverter instance and set parameters
+    converter = VideoConverter(handbrake_metadata["Source"], temporary_file.original)
+    converter.source_options.title = handbrake_metadata["Title"]
+    converter.video_options.quality = handbrake_metadata["Quality Factor"]
+    converter.audio_options.audio_titles = handbrake_metadata["Audio"]
+    converter.audio_options.bitrates = handbrake_metadata["Audio Bitrate"]
+    converter.audio_options.mixdowns = handbrake_metadata["Audio Mixdown"]
+    converter.audio_options.names = handbrake_metadata["Audio Notes"]
+    converter.picture_options.width = handbrake_metadata["Dimensions"].split("x")[0]
+    converter.picture_options.height = handbrake_metadata["Dimensions"].split("x")[1]
+    converter.picture_options.crop = handbrake_metadata["Crop"]
+
+    # convert the video
+    converter.convert()
+
+    # tag temporary video
+    output_file = os.path.join(output_directory, handbrake_metadata["Filename"])
+    _VideoTagger(temporary_file.original, output_file, metadata=subler_metadata).tag(remove_input=True)
+
+
+def _asynchronous_process_spreadsheet(pool, dataframe, output_directory, test):
+    for i in range(len(dataframe.data)):
+        args = (i, dataframe, output_directory, test)
+        pool.apply_async(_convert_and_tag_spreadsheet_item, args=args)
+
+
+def process_spreadsheet(path_to_spreadsheet: str, output_directory: str, parallel: bool = True, test: bool = False):
+
+    """
+    Convert and tag a metadata spreadsheet using either parallel or serial (non-parallel) processing.
+
+    **Parallel processing:**
+    This will process multiple videos simultaneously, one per core. For some reason my 6-core computer comes back
+    with 12 cores available, so I've set this to use half the apparently available cores minus 2. For my 2019 MacBook Pro
+    with a 6-core i7 processor, this assigns (12/2 - 2) = 4 cores to parallel processing. The two additional cores allows
+    for you to continue to work on other things that aren't processor-heavy.
+
+    **Serial processing:**
+    This will use multiple cores automatically assigned by your system but will process a single line in the spreadsheet
+    at a time. This will be faster for a single video file since Handbrake scales well up to 4-6 cores, but for an
+    larger set of videos you're probably better off processing in parallel.
+
+    Parameters
+    ----------
+    path_to_spreadsheet
+        Absolute path to the spreadsheet.
+    output_directory
+        Output directory where you want the final tagged videos.
+    parallel
+        Whether or not to process in parallel.
+    test
+        Whether or not to do a test run, converting from 00:00:03 to 00:00:06 at low-resolution and very fast speed in
+        order to test that all the outputs are tagged correctly and go where you expect them to. Useful to run before
+        initiating a long full-spreadsheet process.
+
+    Examples
+    --------
+    >>> process_spreadsheet('/path/to/metadata.xlsx', '/path/to/output_directory',
+    ...                     parallel=True, test=False)
+    """
+
+    dataframe = MetadataLoader(path_to_spreadsheet)
+    if parallel:
+        n_cores = get_appropriate_number_of_cores()
+        pool = set_processor_pool(n_cores)
+        _asynchronous_process_spreadsheet(pool, dataframe, output_directory, test)
+        cleanup_parallel_processing(pool)
+    else:
+        for i in range(len(dataframe.data)):
+            _convert_and_tag_spreadsheet_item(i, dataframe, output_directory, test)
 
 
 def empty_metadata_spreadsheet(save_directory: str, kind: str):
@@ -590,126 +686,3 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
     save_path = os.path.join(save_directory, f"empty_metadata_{kind}.xlsx")
     df.to_excel(save_path, index=False)
     print(f"Empty spreadsheet saved to \"{save_path}\".")
-
-
-def _convert_and_tag_spreadsheet_item(iterator: int, dataframe: pd.DataFrame, output_directory: str, test: bool):
-
-    """
-    This function actually processes an item from a spreadsheet. It's designed to be called by multiprocessing, but can
-    be called in serial, too.
-
-    Parameters
-    ----------
-    iterator
-        The looping iterator.
-    dataframe
-        The loaded metadata spreadsheet.
-    output_directory
-        The directory where the files are to be saved.
-    test
-        Whether or not to do a quick test run to check file tagging and output paths.
-    """
-
-    # get the line from the metadata
-    row = dataframe.data.iloc[iterator].dropna().to_dict()
-    keys = row.keys()
-    values = row.values()
-
-    # location for temporary file
-    temporary_file = _EscapedString(os.path.join(output_directory, f"temp{iterator}.mp4"))
-
-    # extract metadata to dictionaries
-    handbrake_metadata, subler_metadata = _create_metadata_dictionaries(keys, values)
-
-    # setup a VideoConverter instance and set parameters
-    converter = VideoConverter(handbrake_metadata["Source"], temporary_file.original)
-    converter.source_options.title = handbrake_metadata["Title"]
-    converter.video_options.quality = handbrake_metadata["Quality Factor"]
-    converter.audio_options.audio_titles = handbrake_metadata["Audio"]
-    converter.audio_options.bitrates = handbrake_metadata["Audio Bitrate"]
-    converter.audio_options.mixdowns = handbrake_metadata["Audio Mixdown"]
-    converter.audio_options.names = handbrake_metadata["Audio Notes"]
-    converter.picture_options.width = handbrake_metadata["Dimensions"].split("x")[0]
-    converter.picture_options.height = handbrake_metadata["Dimensions"].split("x")[1]
-    converter.picture_options.crop = handbrake_metadata["Crop"]
-
-    # convert the video
-    converter.convert(test=test)
-
-    # tag temporary video
-    output_file = os.path.join(output_directory, handbrake_metadata["Filename"])
-    _VideoTagger(temporary_file.original, output_file, metadata=subler_metadata).tag(remove_input=True)
-
-
-def _get_appropriate_number_of_cores():
-    n_cores = int(mp.cpu_count() / 2) - 2
-    if n_cores < 1:
-        n_cores = 1
-    return n_cores
-
-
-def _set_processor_pool(n_cores):
-    """
-    mp.get_context('fork') allows parallel processing without 'if __name__ == '__main__'.
-    """
-    return mp.get_context('fork').Pool(n_cores)
-
-
-def _asynchronous_process_spreadsheet(pool, dataframe, output_directory, test):
-    for i in range(len(dataframe.data)):
-        args = (i, dataframe, output_directory, test)
-        pool.apply_async(_convert_and_tag_spreadsheet_item, args=args)
-
-
-def _cleanup_parallel_processing(pool):
-    """
-    No one knows what these do...but things don't work without them.
-    """
-    pool.close()
-    pool.join()
-
-
-def process_spreadsheet(path_to_spreadsheet: str, output_directory: str, parallel: bool = True, test: bool = False):
-
-    """
-    Convert and tag a metadata spreadsheet using either parallel or serial (non-parallel) processing.
-
-    **Parallel processing:**
-    This will process multiple videos simultaneously, one per core. For some reason my 6-core computer comes back
-    with 12 cores available, so I've set this to use half the apparently available cores minus 2. For my 2019 MacBook Pro
-    with a 6-core i7 processor, this assigns (12/2 - 2) = 4 cores to parallel processing. The two additional cores allows
-    for you to continue to work on other things that aren't processor-heavy.
-
-    **Serial processing:**
-    This will use multiple cores automatically assigned by your system but will process a single line in the spreadsheet
-    at a time. This will be faster for a single video file since Handbrake scales well up to 4-6 cores, but for an
-    larger set of videos you're probably better off processing in parallel.
-
-    Parameters
-    ----------
-    path_to_spreadsheet
-        Absolute path to the spreadsheet.
-    output_directory
-        Output directory where you want the final tagged videos.
-    parallel
-        Whether or not to process in parallel.
-    test
-        Whether or not to do a test run, converting from 00:00:03 to 00:00:06 at low-resolution and very fast speed in
-        order to test that all the outputs are tagged correctly and go where you expect them to. Useful to run before
-        initiating a long full-spreadsheet process.
-
-    Examples
-    --------
-    >>> process_spreadsheet('/path/to/metadata.xlsx', '/path/to/output_directory',
-    ...                     parallel=True, test=False)
-    """
-
-    dataframe = MetadataLoader(path_to_spreadsheet)
-    if parallel:
-        n_cores = _get_appropriate_number_of_cores()
-        pool = _set_processor_pool(n_cores)
-        _asynchronous_process_spreadsheet(pool, dataframe, output_directory, test)
-        _cleanup_parallel_processing(pool)
-    else:
-        for i in range(len(dataframe.data)):
-            _convert_and_tag_spreadsheet_item(i, dataframe, output_directory, test)
