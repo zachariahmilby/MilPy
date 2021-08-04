@@ -672,7 +672,7 @@ def _create_metadata_dictionaries(keys: Iterable[str], values: Iterable[str]) ->
     >>> handbrake_dict, subler_dict = _create_metadata_dictionaries(keys_list, values_list)
     """
 
-    excluded_keys = ["Filename", "Source", "Title", "Audio", "Dimensions", "Crop", "Audio Bitrate", "Audio Mixdown", "Audio Notes",
+    excluded_keys = ["Source", "Destination", "Title", "Audio", "Dimensions", "Crop", "Audio Bitrate", "Audio Mixdown", "Audio Notes",
                      "Subtitle", "Chapters", "Quality Factor"]
     subler_dictionary = {key: value for key, value in zip(keys, values) if key not in excluded_keys}
     subler_dictionary['Copyright'] = f'\u00A9 {subler_dictionary["Copyright"]}'
@@ -829,9 +829,9 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
 
      - **Cast:** The names of the main cast members, separated by commas (for names with commas, surround with quotation
        marks like, e.g., Patrick Stewart, "Patrick Stewart, Jr."
-     - **Filename:** The absolute path to where you want the final video to be saved. I usually prefix the file with it's
-       number, e.g., /.../07 Episode 7.mp4 for a main episode or /.../Special Features/103 Special Feature.mp4
      - **Source:** The absolute path to the source, either a disc image `.iso` or a video file.
+     - **Destination:** The absolute path to where you want the final video to be saved. I usually prefix the file with it's
+       number, e.g., /.../07 Episode 7.mp4 for a main episode or /.../Special Features/103 Special Feature.mp4
      - **Title:** The video title, meaning which video track to convert. Discs have multiple, individual videos are just
        title "1".
      - **Dimensions:** The dimensions of the final video separated by an "x", e.g., "854x480" or "640x480" for SD.
@@ -891,9 +891,9 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
      - **Director:** The names of the director(s), same comma considerations as with cast.
      - **Producers:** The names of the producer(s), same comma considerations as with cast.
      - **Screenwriters:** The names of the screenwriter(s), same comma considerations as with cast.
-     - **Filename:** The absolute path to where you want the final video to be saved. I don't usually prefix the main
-       movie file, e.g., /.../Film Name.mp4, but for a special feature /.../Special Features/103 Special Feature.mp4
      - **Source:** The absolute path to the source, either a disc image `.iso` or a video file.
+     - **Destination:** The absolute path to where you want the final video to be saved. I don't usually prefix the main
+       movie file, e.g., /.../Film Name.mp4, but for a special feature /.../Special Features/103 Special Feature.mp4
      - **Title:** The video title, meaning which video track to convert. Discs have multiple, individual videos are just
        title "1".
      - **Dimensions:** The dimensions of the final video separated by an "x", e.g., "854x480" or "640x480" for SD.
@@ -946,8 +946,8 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
                   'Cover Art',
                   'Rating',
                   'Cast',
-                  'Filename',
                   'Source',
+                  'Destination',
                   'Title',
                   'Audio',
                   'Dimensions',
@@ -973,8 +973,8 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
                      'Director',
                      'Producers',
                      'Screenwriters',
-                     'Filename',
                      'Source',
+                     'Destination',
                      'Title',
                      'Audio',
                      'Dimensions',
