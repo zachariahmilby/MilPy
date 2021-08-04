@@ -17,6 +17,10 @@ def _path_to_system_executable(executable: str) -> str:
     return path
 
 
+def _run_conversion_in_terminal(options_list):
+    os.system(_construct_terminal_commands(options_list))
+
+
 class VideoConverter:
 
     """
@@ -181,7 +185,7 @@ class VideoConverter:
         """
 
         self._set_options_list()
-        self._run_conversion_in_terminal()
+        _run_conversion_in_terminal(self.options)
 
     def _set_test_video_options(self):
         self.video_options.encoder = 'x264'
@@ -200,9 +204,6 @@ class VideoConverter:
         self.options.append('--start-at=seconds:0')
         self.options.append('--stop-at=seconds:10')
 
-    def _run_conversion_in_terminal(self):
-        os.system(_construct_terminal_commands(self.options))
-
     def test(self):
 
         """
@@ -212,7 +213,7 @@ class VideoConverter:
         self._set_test_video_options()
         self._set_options_list()
         self._set_test_video_length()
-        self._run_conversion_in_terminal()
+        _run_conversion_in_terminal(self.options)
 
 
 def video_inspector(source_filepath: str):
@@ -227,13 +228,13 @@ def video_inspector(source_filepath: str):
 
     Examples
     --------
-    >>> video_inspector('/path/to/video file.mp4')
+    >>> video_inspector('/path/to/video.mp4')
     """
 
     options = [_path_to_system_executable("anc/SublerCLI"),
                f"-source {_EscapedString(source_filepath)}",
                f"-listmetadata"]
-    os.system(_construct_terminal_commands(options))
+    _run_conversion_in_terminal(options)
 
 
 def _create_metadata_dictionaries(keys: Iterable[str], values: Iterable[str]) -> dict:
