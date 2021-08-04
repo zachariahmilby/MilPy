@@ -1,4 +1,9 @@
+from typing import Iterable
 from milpy.miscellaneous import _EscapedString, _ValidatePath, _ValidateDirectory
+
+
+def _construct_terminal_commands(command_line_arguments: Iterable[str]) -> str:
+    return ' '.join(command_line_arguments)
 
 
 class SourceOptions:

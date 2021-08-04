@@ -8,17 +8,13 @@ import re
 from typing import Iterable
 import multiprocessing as mp
 from milpy.miscellaneous import _EscapedString, _ValidatePath, _ValidateDirectory
-from milpy.video._handbrake import SourceOptions, DestinationOptions, VideoOptions, AudioOptions, PictureOptions, SubtitleOptions
+from milpy.video._handbrake import _construct_terminal_commands, SourceOptions, DestinationOptions, VideoOptions, AudioOptions, PictureOptions, SubtitleOptions
 
 
 def _path_to_system_executable(executable: str) -> str:
     path = _EscapedString(os.path.join(os.path.dirname(__file__), executable))
     os.system(f'chmod 777 {path}')
     return path
-
-
-def _construct_terminal_commands(command_line_arguments: Iterable[str]) -> str:
-    return ' '.join(command_line_arguments)
 
 
 class VideoConverter:
@@ -162,6 +158,7 @@ class VideoConverter:
         self.audio_options = AudioOptions()
         self.picture_options = PictureOptions()
         self.subtitle_options = SubtitleOptions()
+        self.options = None
 
     def __str__(self):
         print_string = "Video converter settings:\n"
@@ -177,33 +174,45 @@ class VideoConverter:
             print_string += self.picture_options.__str__()
         return print_string
 
-    def convert(self, test: bool = False) -> None:
+    def convert(self):
 
         """
         Initiates the video conversion with HandBrakeCLI using set input parameters.
-
-        Parameters
-        ----------
-        test
-            If True, does a quick, short conversion of the file to test output and tagging.
         """
 
-        if test:
-            self.video_options.encoder = 'x264'
-            self.video_options.speed = 'ultrafast'
+        self._set_options_list()
+        self._run_conversion_in_terminal()
 
-        options = [self.handbrake_cli,
-                   self.source_options.construct_terminal_commands(),
-                   self.destination_options.construct_terminal_commands(),
-                   self.video_options.construct_terminal_commands(),
-                   self.audio_options.construct_terminal_commands(),
-                   self.picture_options.construct_terminal_commands(),
-                   self.subtitle_options.construct_terminal_commands()]
+    def _set_test_video_options(self):
+        self.video_options.encoder = 'x264'
+        self.video_options.speed = 'ultrafast'
 
-        if test:
-            options.append('--start-at=seconds:0')
-            options.append('--stop-at=seconds:10')
-        os.system(_construct_terminal_commands(options))
+    def _set_options_list(self):
+        self.options = [self.handbrake_cli,
+                        self.source_options.construct_terminal_commands(),
+                        self.destination_options.construct_terminal_commands(),
+                        self.video_options.construct_terminal_commands(),
+                        self.audio_options.construct_terminal_commands(),
+                        self.picture_options.construct_terminal_commands(),
+                        self.subtitle_options.construct_terminal_commands()]
+
+    def _set_test_video_length(self):
+        self.options.append('--start-at=seconds:0')
+        self.options.append('--stop-at=seconds:10')
+
+    def _run_conversion_in_terminal(self):
+        os.system(_construct_terminal_commands(self.options))
+
+    def test(self):
+
+        """
+        Tests video conversion output by quick-converting a 10-second clip.
+        """
+
+        self._set_test_video_options()
+        self._set_options_list()
+        self._set_test_video_length()
+        self._run_conversion_in_terminal()
 
 
 def video_inspector(source_filepath: str):
