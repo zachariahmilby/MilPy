@@ -1,5 +1,6 @@
 import os
 
+
 class _ValidatePath(str):
 
     """
@@ -30,7 +31,7 @@ class _ValidateDirectory(str):
     def _create_directory_if_it_does_not_exist(path: str):
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
-            os.mkdir(directory)
+            os.makedirs(directory)
 
 
 class _EscapedString(str):
@@ -62,7 +63,7 @@ class _EscapedString(str):
 
     @staticmethod
     def _add_backslashes_before_special_characters(string: str) -> str:
-        special_characters = '\|&:;()<>~*@?!$#"` ' + "'"
+        special_characters = '|&:;()<>~*@?!$#"` ' + "'"
         for i in special_characters:
             string = string.replace(i, rf'\{i}')
         return string

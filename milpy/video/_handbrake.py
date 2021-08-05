@@ -1,9 +1,5 @@
-from typing import Iterable
 from milpy.miscellaneous import _EscapedString, _ValidatePath, _ValidateDirectory
-
-
-def _construct_terminal_commands(command_line_arguments: Iterable[str]) -> str:
-    return ' '.join(command_line_arguments)
+from milpy.terminal_interface import construct_terminal_commands
 
 
 class SourceOptions:
@@ -46,7 +42,7 @@ class SourceOptions:
 
         options = [f"--input={self._input}",
                    f"--title={self.title}"]
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
     @property
     def input(self):
@@ -120,7 +116,7 @@ class DestinationOptions:
             options.append(f"--optimize")
         if self.align_av:
             options.append(f"--align-av")
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
     @property
     def output(self):
@@ -183,7 +179,7 @@ class VideoOptions:
             options.append("--two-pass")
             options.append("--turbo")
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
 
 class AudioOptions:
@@ -260,7 +256,7 @@ class AudioOptions:
         if self.names != 'None':
             options.append(f'--aname={self.names}')
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
 
 class PictureOptions:
@@ -314,7 +310,7 @@ class PictureOptions:
         if self.height is not None:
             options.append(f"--height={self.height}")
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
 
 class SubtitleOptions:
@@ -356,4 +352,4 @@ class SubtitleOptions:
             options.append(f"--subtitle={self.subtitles}")
             options.append("--subtitle-burned")
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
