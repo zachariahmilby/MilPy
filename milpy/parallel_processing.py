@@ -15,6 +15,12 @@ def set_processor_pool(n_cores):
     return mp.get_context('fork').Pool(n_cores)
 
 
+def get_multiprocessing_pool():
+    n_cores = get_appropriate_number_of_cores()
+    pool = set_processor_pool(n_cores)
+    return pool
+
+
 def cleanup_parallel_processing(pool):
     """
     No one knows what these do...but things don't work without them.

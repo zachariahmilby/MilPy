@@ -1,16 +1,17 @@
 import pandas as pd
 
+
 def _tv_spreadsheet_columns():
     return ['Name', 'Artist', 'Album Artist', 'Album', 'Genre', 'Release Date', 'Track #', 'TV Show', 'TV Episode ID',
             'TV Season', 'TV Episode #', 'TV Network', 'Description', 'Series Description', 'Copyright', 'Media Kind',
             'Cover Art', 'Rating', 'Cast', 'Source', 'Destination', 'Title', 'Audio', 'Dimensions', 'Crop',
-            'Audio Bitrate', 'Audio Mixdown', 'Audio Notes', 'HD Video', 'Quality Factor', 'Subtitle', 'Chapters']
+            'Audio Bitrate', 'Audio Mixdown', 'Audio Track Names', 'HD Video', 'Quality Factor', 'Subtitle', 'Chapters']
 
 
 def _movie_spreadsheet_columns():
     return ['Name', 'Genre', 'Release Date', 'Description', 'Copyright', 'Media Kind', 'Cover Art', 'Rating',
             'Rating Annotation', 'Cast', 'Director', 'Producers', 'Screenwriters', 'Source', 'Destination', 'Title',
-            'Audio', 'Dimensions', 'Crop', 'Audio Bitrate', 'Audio Mixdown', 'Audio Notes', 'HD Video',
+            'Audio', 'Dimensions', 'Crop', 'Audio Bitrate', 'Audio Mixdown', 'Audio Track Names', 'HD Video',
             'Quality Factor', 'Subtitle', 'Chapters']
 
 

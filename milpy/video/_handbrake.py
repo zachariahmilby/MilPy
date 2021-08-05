@@ -41,7 +41,8 @@ class SourceOptions:
         """
 
         options = [f"--input={self._input}",
-                   f"--title={self.title}"]
+                   f"--title={self.title}",
+                   f"--previews=1:0"]
         return construct_terminal_commands(options)
 
     @property
@@ -191,7 +192,7 @@ class AudioOptions:
     https://handbrake.fr/docs/en/latest/cli/command-line-reference.html
     """
 
-    def __init__(self, audio_titles="1", encoder="ca_aac", bitrates=None, mixdowns=None, sample_rates=None, names='None'):
+    def __init__(self, audio_titles="1", encoder="ca_aac", bitrates=None, mixdowns=None, sample_rates=None, track_names='None'):
 
         """
         Parameters
@@ -210,7 +211,7 @@ class AudioOptions:
         sample_rates
             Sample rate in kHz. A good choice is probably 48 if you want to manually define it, otherwise it will
             automatically determine an appropriate rate.
-        names
+        track_names
             The audio track names, separated by a comma. For the example above, this might be 5.1 Surround Sound,"Commentary by Director
             XXX XXX, Producer YYY YYY and Screenwriter ZZZ ZZZ".
         """
@@ -220,7 +221,7 @@ class AudioOptions:
         self.bitrates = bitrates
         self.mixdowns = mixdowns
         self.sample_rates = sample_rates
-        self._names = _EscapedString(names)
+        self._track_names = _EscapedString(track_names)
 
     def __str__(self):
         print_string = f"Audio options:\n"\
@@ -229,19 +230,19 @@ class AudioOptions:
                        f"   Bitrate(s) (kbps): {self.bitrates}\n"\
                        f"   Mixdown(s): {self.mixdowns}\n"\
                        f"   Sample rate(s) (kHz): {self.sample_rates}\n"\
-                       f"   Track name(s): {self.names.original}"
+                       f"   Track name(s): {self._track_names.original}"
         return print_string.replace('None', 'Same as source')
 
     def __repr__(self):
         return self.construct_terminal_commands()
 
     @property
-    def names(self):
-        return self._names
+    def track_names(self):
+        return self._track_names
 
-    @names.setter
-    def names(self, value):
-        self._names = _EscapedString(value)
+    @track_names.setter
+    def track_names(self, value):
+        self._track_names = _EscapedString(value)
 
     def construct_terminal_commands(self):
 
@@ -253,8 +254,8 @@ class AudioOptions:
             options.append(f"--mixdown={self.mixdowns}")
         if self.sample_rates is not None:
             options.append(f"--arate={self.sample_rates}")
-        if self.names != 'None':
-            options.append(f'--aname={self.names}')
+        if self._track_names != 'None':
+            options.append(f'--aname={self._track_names}')
 
         return construct_terminal_commands(options)
 
