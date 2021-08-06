@@ -288,7 +288,7 @@ def tag_only(path_to_spreadsheet):
     pool = get_multiprocessing_pool()
     for item in range(spreadsheet.n_items):
         handbrake_metadata = spreadsheet.make_handbrake_dictionary(item)
-        source_file = handbrake_metadata["Source"]
+        source_file = handbrake_metadata["Destination"]
         pool.apply_async(_tag_spreadsheet_item, args=(spreadsheet, item, source_file))
     cleanup_parallel_processing(pool)
 
