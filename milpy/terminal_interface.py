@@ -1,10 +1,10 @@
 import os
 from typing import Iterable
-from milpy.miscellaneous import _EscapedString
+from milpy.miscellaneous import EscapedString
 
 
 def path_to_system_executable(executable: str) -> str:
-    path = _EscapedString(os.path.join(os.path.dirname(__file__), executable))
+    path = EscapedString(os.path.join(os.path.dirname(__file__), executable))
     os.system(f'chmod 777 {path}')
     return path
 
