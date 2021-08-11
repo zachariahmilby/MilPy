@@ -14,7 +14,7 @@ class _VideoConverter:
         self.options = converter_options
 
     def _create_command_of_input_options(self):
-        return f'{path_to_subler_cli()} ' + \
+        return f'{path_to_handbrake_cli()} ' + \
                f'{repr(self.options.source)} ' + \
                f'{repr(self.options.destination)} ' + \
                f'{repr(self.options.video)} ' + \
@@ -258,30 +258,33 @@ class Spreadsheet:
 
     @staticmethod
     def _get_source_type(source_filepath: str):
-        ext = os.path.splitext(source_filepath)
-        if ext == ".mp4":
+        extension = os.path.splitext(source_filepath)[1]
+        if extension == ".mp4":
             return MP4(source_filepath)
-        elif ext == ".mkv":
+        elif extension == ".mkv":
             return MKV(source_filepath)
-        elif ext == ".iso":
+        elif extension == ".iso":
             return ISO(source_filepath)
         else:
             raise Exception('Bad input file type.')
 
     def _set_source_parameters(self, item: int):
         handbrake_metadata = self.spreadsheet.make_handbrake_dictionary(item)
-        video = _get_source_type(handbrake_metadata["Source"])
-        video.converter_options.source_options.title = handbrake_metadata["Title"]
-        video.converter_options.source_options.quality = handbrake_metadata["Quality Factor"]
-        video.converter_options.destination_options.destination = handbrake_metadata["Destination"]
-        video.converter_options.destination_options.markers = handbrake_metadata["Chapters"]
-        video.converter_options.audio_options.audio_titles = handbrake_metadata["Audio"]
-        video.converter_options.audio_options.bitrates = handbrake_metadata["Audio Bitrate"]
-        video.converter_options.audio_options.mixdowns = handbrake_metadata["Audio Mixdown"]
-        video.converter_options.audio_options.track_names = handbrake_metadata["Audio Track Names"]
-        video.converter_options.picture_options.width = handbrake_metadata["Dimensions"].split("x")[0]
-        video.converter_options.picture_options.height = handbrake_metadata["Dimensions"].split("x")[1]
-        video.converter_options.picture_options.crop = handbrake_metadata["Crop"]
+        video = self._get_source_type(handbrake_metadata["Source"])
+        video.converter_options.source.title = handbrake_metadata["Title"]
+        video.converter_options.source.quality = handbrake_metadata["Quality Factor"]
+        video.converter_options.destination.output = handbrake_metadata["Destination"]
+        try:
+            video.converter_options.destination.markers = handbrake_metadata["Chapters"]
+        except KeyError:
+            pass
+        video.converter_options.audio.audio_titles = handbrake_metadata["Audio"]
+        video.converter_options.audio.bitrates = handbrake_metadata["Audio Bitrate"]
+        video.converter_options.audio.mixdowns = handbrake_metadata["Audio Mixdown"]
+        video.converter_options.audio.track_names = handbrake_metadata["Audio Track Names"]
+        video.converter_options.picture.width = handbrake_metadata["Dimensions"].split("x")[0]
+        video.converter_options.picture.height = handbrake_metadata["Dimensions"].split("x")[1]
+        video.converter_options.picture.crop = handbrake_metadata["Crop"]
         return video
 
     @staticmethod
@@ -299,13 +302,13 @@ class Spreadsheet:
     @staticmethod
     def _parallel_convert_and_tag(video, metadata_dictionary):
         video.convert()
-        output_video = MP4(video.converter_options.destination_options.destination)
+        output_video = MP4(video.converter_options.destination.output)
         output_video.tag(metadata_dictionary)
 
     @staticmethod
     def _test_parallel_convert_and_tag(video, metadata_dictionary):
         video.test_convert()
-        output_video = MP4(video.converter_options.destination_options.destination)
+        output_video = MP4(video.converter_options.destination.output)
         output_video.tag(metadata_dictionary)
 
     def serial_convert_only(self):
@@ -399,7 +402,7 @@ class Spreadsheet:
         for item in range(self.spreadsheet.n_items):
             subler_dictionary = format_subler_metadata_from_dictionary(self.spreadsheet.make_subler_dictionary(item))
             video = self._set_source_parameters(item)
-            pool.apply_async(self._test_parallel_convert_and_tag, args=(video, subler_dictionary))
+            pool.apply_async(self._test_parallel_convert_and_tag, args=(video, subler_dictionary)).get()
         cleanup_parallel_processing(pool)
 
 
@@ -569,3 +572,7 @@ def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
     _make_dataframe_from_columns(columns).to_excel(save_path, index=False)
 
     print(f"Empty spreadsheet saved to \"{save_path}\".")
+
+
+if __name__ == "__main__":
+    Spreadsheet('/Volumes/Media HD/Disc Images/Frasier/metadata.xlsx').serial_convert_only()

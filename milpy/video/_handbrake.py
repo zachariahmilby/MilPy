@@ -225,7 +225,7 @@ class AudioOptions:
         self.bitrates = bitrates
         self.mixdowns = mixdowns
         self.sample_rates = sample_rates
-        self._track_names = track_names
+        self.track_names = track_names
 
     def __str__(self):
         print_string = f"Audio options:\n"\
@@ -234,7 +234,7 @@ class AudioOptions:
                        f"   Bitrate(s) (kbps): {self.bitrates}\n"\
                        f"   Mixdown(s): {self.mixdowns}\n"\
                        f"   Sample rate(s) (kHz): {self.sample_rates}\n"\
-                       f"   Track name(s): {self._track_names}"
+                       f"   Track name(s): {self.track_names}"
         return print_string.replace('None', 'Same as source')
 
     def __repr__(self):
@@ -250,8 +250,8 @@ class AudioOptions:
             options.append(f"--mixdown={self.mixdowns}")
         if self.sample_rates is not None:
             options.append(f"--arate={self.sample_rates}")
-        if self._track_names != 'None':
-            options.append(f'--aname={self._track_names}')
+        if self.track_names != 'None':
+            options.append(f'--aname={self.track_names}')
 
         return construct_terminal_commands(options)
 

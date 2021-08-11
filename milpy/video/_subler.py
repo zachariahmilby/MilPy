@@ -24,7 +24,7 @@ def make_temporary_video(source_filepath):
 class _Spreadsheet:
 
     def __init__(self, path_to_spreadsheet):
-        self.metadata: pd.read_excel(path_to_spreadsheet, dtype=str)
+        self.metadata: pd.DataFrame = pd.read_excel(path_to_spreadsheet, dtype=str)
         self.n_items = self.metadata.shape[0]
 
     def _get_item_metadata(self, line):
