@@ -123,6 +123,13 @@
     <span class="n">cleanup_parallel_processing</span>
 
 
+<span class="c1"># TODO: Find a way to determine the number of chapters in a source/title, then</span>
+<span class="c1">#  if there are more than 1, include &quot;--markers&quot; in Handbrake command. If 0 or</span>
+<span class="c1">#  1 chapters, then include &quot;--no-markers&quot;. Finally, only do these if a</span>
+<span class="c1">#  spreadsheet entry for &quot;Chapters&quot; does not include the path to a CSV with</span>
+<span class="c1">#  chapter information, in which case it should be &quot;--markers=/path/to/csv.csv&quot;</span>
+
+
 <span class="k">class</span> <span class="nc">_VideoConverter</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">converter_options</span><span class="p">:</span> <span class="n">VideoConversionOptions</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">converter_options</span>
@@ -141,8 +148,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">video</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="s1">&#39;ultrafast&#39;</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_add_10_second_test_to_options</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">options</span><span class="si">}</span><span class="s1"> &#39;</span> <span class="o">+</span> <span class="s1">&#39;--start-at=seconds:0 &#39;</span> <span class="o">+</span> <span class="s1">&#39;--stop-at=seconds:10&#39;</span>
+    <span class="k">def</span> <span class="nf">_add_30_second_test_to_options</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">options</span><span class="si">}</span><span class="s1"> &#39;</span> <span class="o">+</span> <span class="s1">&#39;--start-at=seconds:0 &#39;</span> <span class="o">+</span> <span class="s1">&#39;--stop-at=seconds:30&#39;</span>
 
     <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">command</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_command_of_input_options</span><span class="p">()</span>
@@ -151,7 +158,7 @@
     <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set_test_video_options</span><span class="p">()</span>
         <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_command_of_input_options</span><span class="p">()</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_10_second_test_to_options</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_30_second_test_to_options</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
 
 

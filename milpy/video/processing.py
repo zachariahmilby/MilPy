@@ -11,6 +11,13 @@ from milpy.parallel_processing import get_multiprocessing_pool, \
     cleanup_parallel_processing
 
 
+# TODO: Find a way to determine the number of chapters in a source/title, then
+#  if there are more than 1, include "--markers" in Handbrake command. If 0 or
+#  1 chapters, then include "--no-markers". Finally, only do these if a
+#  spreadsheet entry for "Chapters" does not include the path to a CSV with
+#  chapter information, in which case it should be "--markers=/path/to/csv.csv"
+
+
 class _VideoConverter:
     def __init__(self, converter_options: VideoConversionOptions):
         self.options = converter_options
@@ -29,8 +36,8 @@ class _VideoConverter:
         self.options.video.speed = 'ultrafast'
 
     @staticmethod
-    def _add_10_second_test_to_options(options: str):
-        return f'{options} ' + '--start-at=seconds:0 ' + '--stop-at=seconds:10'
+    def _add_30_second_test_to_options(options: str):
+        return f'{options} ' + '--start-at=seconds:0 ' + '--stop-at=seconds:30'
 
     def convert(self):
         command = self._create_command_of_input_options()
@@ -39,7 +46,7 @@ class _VideoConverter:
     def test(self):
         self._set_test_video_options()
         options = self._create_command_of_input_options()
-        options = self._add_10_second_test_to_options(options)
+        options = self._add_30_second_test_to_options(options)
         os.system(options)
 
 
