@@ -4,9 +4,11 @@ from milpy.miscellaneous import EscapedString
 from milpy.video._handbrake import path_to_handbrake_cli, \
     VideoConversionOptions
 from milpy.video._subler import path_to_subler_cli, \
-    format_subler_metadata_from_dictionary, make_temporary_video, _Spreadsheet
+    format_subler_metadata_from_dictionary, make_temporary_video, \
+    SpreadsheetLoader
 from milpy.terminal_interface import construct_terminal_commands
-from milpy.parallel_processing import get_multiprocessing_pool, cleanup_parallel_processing
+from milpy.parallel_processing import get_multiprocessing_pool, \
+    cleanup_parallel_processing
 
 
 class _VideoConverter:
@@ -137,10 +139,11 @@ class MP4:
             The metadata tags and values.
         """
         temporary_filepath = make_temporary_video(self.file_path)
+        metadata = format_subler_metadata_from_dictionary(metadata_dictionary)
         options = [path_to_subler_cli(),
                    f"-source {temporary_filepath}",
                    f"-dest {EscapedString(self.file_path)}",
-                   f"-metadata {format_subler_metadata_from_dictionary(metadata_dictionary)}",
+                   f"-metadata {metadata}",
                    f"-language English"]
         os.system(construct_terminal_commands(options))
         os.remove(temporary_filepath.original)
@@ -220,7 +223,8 @@ class ISO:
 
     def _set_converter_options(self):
         file_extension = Path(self.file_path).suffix
-        destination = self.file_path.replace(file_extension, ', Title 1 (Converted).mp4')
+        destination = self.file_path.replace(file_extension,
+                                             ', Title 1 (Converted).mp4')
         converter_options = VideoConversionOptions(self.file_path, destination)
         return converter_options
 
@@ -254,7 +258,7 @@ class Spreadsheet:
             The absolute path to the spreadsheet. To make a blank spreadsheet,
             use the function `make_empty_metadata_spreadsheet()`.
         """
-        self.spreadsheet = _Spreadsheet(path_to_spreadsheet)
+        self.spreadsheet = SpreadsheetLoader(path_to_spreadsheet)
 
     @staticmethod
     def _get_source_type(source_filepath: str):
@@ -287,29 +291,32 @@ class Spreadsheet:
         video.converter_options.picture.crop = handbrake_metadata["Crop"]
         return video
 
-    @staticmethod
-    def _parallel_convert(video):
+    def _parallel_convert(self, item):
+        video = self._set_source_parameters(item)
         video.convert()
 
-    @staticmethod
-    def _test_parallel_convert(video):
+    def _test_parallel_convert(self, item):
+        video = self._set_source_parameters(item)
         video.test_convert()
 
-    @staticmethod
-    def _parallel_tag(video: MP4, metadata_dictionary):
-        video.tag(metadata_dictionary)
+    def _parallel_tag(self, item):
+        handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+        metadata_dictionary = self.spreadsheet.make_subler_dictionary(item)
+        MP4(handbrake_dictionary["Destination"]).tag(metadata_dictionary)
 
-    @staticmethod
-    def _parallel_convert_and_tag(video, metadata_dictionary):
+    def _parallel_convert_and_tag(self, item):
+        video = self._set_source_parameters(item)
         video.convert()
-        output_video = MP4(video.converter_options.destination.output)
-        output_video.tag(metadata_dictionary)
+        handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+        metadata_dictionary = self.spreadsheet.make_subler_dictionary(item)
+        MP4(handbrake_dictionary["Destination"]).tag(metadata_dictionary)
 
-    @staticmethod
-    def _test_parallel_convert_and_tag(video, metadata_dictionary):
+    def _test_parallel_convert_and_tag(self, item):
+        video = self._set_source_parameters(item)
         video.test_convert()
-        output_video = MP4(video.converter_options.destination.output)
-        output_video.tag(metadata_dictionary)
+        handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+        metadata_dictionary = self.spreadsheet.make_subler_dictionary(item)
+        MP4(handbrake_dictionary["Destination"]).tag(metadata_dictionary)
 
     def serial_convert_only(self):
         """
@@ -333,8 +340,7 @@ class Spreadsheet:
         """
         pool = get_multiprocessing_pool()
         for item in range(self.spreadsheet.n_items):
-            video = self._set_source_parameters(item)
-            pool.apply_async(self._parallel_convert, args=(video,))
+            pool.apply_async(self._parallel_convert, args=(item,))
         cleanup_parallel_processing(pool)
 
     def test_convert_only(self):
@@ -344,8 +350,7 @@ class Spreadsheet:
         """
         pool = get_multiprocessing_pool()
         for item in range(self.spreadsheet.n_items):
-            video = self._set_source_parameters(item)
-            pool.apply_async(self._test_parallel_convert, args=(video,))
+            pool.apply_async(self._test_parallel_convert, args=(item,))
         cleanup_parallel_processing(pool)
 
     def tag_only(self):
@@ -356,10 +361,7 @@ class Spreadsheet:
         """
         pool = get_multiprocessing_pool()
         for item in range(self.spreadsheet.n_items):
-            handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
-            subler_dictionary = format_subler_metadata_from_dictionary(self.spreadsheet.make_subler_dictionary(item))
-            video = MP4(handbrake_dictionary["Destination"])
-            pool.apply_async(self._parallel_tag, args=(video, subler_dictionary))
+            pool.apply_async(self._parallel_tag, args=(item,))
         cleanup_parallel_processing(pool)
 
     def serial_convert_and_tag(self):
@@ -372,10 +374,11 @@ class Spreadsheet:
         videos.
         """
         for item in range(self.spreadsheet.n_items):
-            subler_dictionary = format_subler_metadata_from_dictionary(self.spreadsheet.make_subler_dictionary(item))
+            handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+            subler_dictionary = self.spreadsheet.make_subler_dictionary(item)
             video = self._set_source_parameters(item)
             video.convert()
-            video.tag(subler_dictionary)
+            MP4(handbrake_dictionary["Destination"]).tag(subler_dictionary)
 
     def parallel_convert_and_tag(self):
         """
@@ -388,9 +391,7 @@ class Spreadsheet:
         """
         pool = get_multiprocessing_pool()
         for item in range(self.spreadsheet.n_items):
-            subler_dictionary = format_subler_metadata_from_dictionary(self.spreadsheet.make_subler_dictionary(item))
-            video = self._set_source_parameters(item)
-            pool.apply_async(self._parallel_convert_and_tag, args=(video, subler_dictionary))
+            pool.apply_async(self._parallel_convert_and_tag, args=(item,))
         cleanup_parallel_processing(pool)
 
     def test_convert_and_tag(self):
@@ -400,9 +401,7 @@ class Spreadsheet:
         """
         pool = get_multiprocessing_pool()
         for item in range(self.spreadsheet.n_items):
-            subler_dictionary = format_subler_metadata_from_dictionary(self.spreadsheet.make_subler_dictionary(item))
-            video = self._set_source_parameters(item)
-            pool.apply_async(self._test_parallel_convert_and_tag, args=(video, subler_dictionary)).get()
+            pool.apply_async(self._test_parallel_convert_and_tag, args=(item,))
         cleanup_parallel_processing(pool)
 
 
@@ -575,4 +574,4 @@ def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
 
 
 if __name__ == "__main__":
-    Spreadsheet('/Volumes/Media HD/Disc Images/Frasier/metadata.xlsx').serial_convert_only()
+    Spreadsheet('/Volumes/Media HD/Disc Images/Frasier/metadata.xlsx').test_convert_and_tag()

@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from milpy.miscellaneous import EscapedString
 from milpy.terminal_interface import construct_terminal_commands, path_to_system_executable
@@ -21,7 +22,7 @@ def make_temporary_video(source_filepath):
     return EscapedString(temporary_filepath)
 
 
-class _Spreadsheet:
+class SpreadsheetLoader:
 
     def __init__(self, path_to_spreadsheet):
         self.metadata: pd.DataFrame = pd.read_excel(path_to_spreadsheet, dtype=str)
@@ -53,72 +54,3 @@ class _Spreadsheet:
     def make_handbrake_dictionary(self, line):
         return {key: str(value) for key, value in self._get_item_metadata(line)
                 if key in self._handbrake_dictionary_keys()}
-
-
-def _test_convert_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):
-    source, destination = _set_source_parameters(spreadsheet, item)
-    source.test_convert()
-    return destination
-
-
-def _convert_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):
-    source, destination = _set_source_parameters(spreadsheet, item)
-    source.convert()
-    return destination
-
-
-def _tag_spreadsheet_item(spreadsheet: _Spreadsheet, item: int, input_filepath: str):
-    subler_metadata = spreadsheet.make_subler_dictionary(item)
-    video = Video(input_filepath)
-    video.tag(subler_metadata)
-
-
-def _convert_and_tag_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):
-    output = _convert_spreadsheet_item(spreadsheet, item)
-    _tag_spreadsheet_item(spreadsheet, item, output)
-
-
-def _test_convert_and_tag_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):
-    output = _test_convert_spreadsheet_item(spreadsheet, item)
-    _tag_spreadsheet_item(spreadsheet, item, output)
-
-
-def convert_and_tag_spreadsheet_in_serial(path_to_spreadsheet):
-    spreadsheet = _Spreadsheet(path_to_spreadsheet)
-    [_convert_and_tag_spreadsheet_item(spreadsheet, item) for item in range(spreadsheet.n_items)]
-
-
-def convert_and_tag_spreadsheet_in_parallel(path_to_spreadsheet):
-    spreadsheet = _Spreadsheet(path_to_spreadsheet)
-    pool = get_multiprocessing_pool()
-    [pool.apply_async(_convert_and_tag_spreadsheet_item, args=(spreadsheet, item,)) for item in range(spreadsheet.n_items)]
-    cleanup_parallel_processing(pool)
-
-
-def convert_and_tag_spreadsheet_test(path_to_spreadsheet):
-    spreadsheet = _Spreadsheet(path_to_spreadsheet)
-    pool = get_multiprocessing_pool()
-    [pool.apply_async(_test_convert_and_tag_spreadsheet_item, args=(spreadsheet, item,)) for item in range(spreadsheet.n_items)]
-    cleanup_parallel_processing(pool)
-
-
-def convert_only_in_serial(path_to_spreadsheet):
-    spreadsheet = _Spreadsheet(path_to_spreadsheet)
-    [_convert_spreadsheet_item(spreadsheet, item) for item in range(spreadsheet.n_items)]
-
-
-def convert_only_in_parallel(path_to_spreadsheet):
-    spreadsheet = _Spreadsheet(path_to_spreadsheet)
-    pool = get_multiprocessing_pool()
-    [pool.apply_async(_convert_spreadsheet_item, args=(spreadsheet, item,)) for item in range(spreadsheet.n_items)]
-    cleanup_parallel_processing(pool)
-
-
-def tag_only(path_to_spreadsheet):
-    spreadsheet = _Spreadsheet(path_to_spreadsheet)
-    pool = get_multiprocessing_pool()
-    for item in range(spreadsheet.n_items):
-        handbrake_metadata = spreadsheet.make_handbrake_dictionary(item)
-        source_file = handbrake_metadata["Destination"]
-        pool.apply_async(_tag_spreadsheet_item, args=(spreadsheet, item, source_file))
-    cleanup_parallel_processing(pool)
