@@ -254,6 +254,16 @@ use the function <cite>make_empty_metadata_spreadsheet()</cite>.</p>
 </dd>
 </dl>
 <dl class="py method">
+<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.parallel_convert">
+<span class="sig-name descname"><span class="pre">parallel_convert</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.parallel_convert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.parallel_convert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the source to destination using the Handbrake parameters for
+each item. This converts multiple items at once using as many cores as
+your computer decides to allocate. I find parallel conversion is
+better for a set of standard-definition videos, while serial conversion
+is better for a set of high-definition videos.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.parallel_convert_and_tag">
 <span class="sig-name descname"><span class="pre">parallel_convert_and_tag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.parallel_convert_and_tag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.parallel_convert_and_tag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert the source to destination using the Handbrake parameters then
@@ -265,13 +275,13 @@ videos.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.parallel_convert_only">
-<span class="sig-name descname"><span class="pre">parallel_convert_only</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.parallel_convert_only"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.parallel_convert_only" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.serial_convert">
+<span class="sig-name descname"><span class="pre">serial_convert</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.serial_convert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.serial_convert" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert the source to destination using the Handbrake parameters for
-each item. This converts multiple items at once using as many cores as
-your computer decides to allocate. I find parallel conversion is
-better for a set of standard-definition videos, while serial conversion
-is better for a set of high-definition videos.</p>
+each item. This converts the items one at a time using as many cores as
+your computer decides to allocate. I find serial conversion is better
+for a set of high-definition videos, while parallel conversion is
+better for a set of standard-definition videos.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -286,21 +296,18 @@ videos.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.serial_convert_only">
-<span class="sig-name descname"><span class="pre">serial_convert_only</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.serial_convert_only"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.serial_convert_only" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert the source to destination using the Handbrake parameters for
-each item. This converts the items one at a time using as many cores as
-your computer decides to allocate. I find serial conversion is better
-for a set of high-definition videos, while parallel conversion is
-better for a set of standard-definition videos.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.tag_only">
-<span class="sig-name descname"><span class="pre">tag_only</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.tag_only"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.tag_only" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.tag">
+<span class="sig-name descname"><span class="pre">tag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.tag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.tag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assuming all source items are MP4 files which only need tagging, tag
 them in parallel using the Subler parameters for each item. This uses
 the “Destination” parameter as the source and destination file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.test_convert">
+<span class="sig-name descname"><span class="pre">test_convert</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.test_convert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.test_convert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test conversion of a spreadsheet. This is done using parallel
+processing.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -308,13 +315,6 @@ the “Destination” parameter as the source and destination file.</p>
 <span class="sig-name descname"><span class="pre">test_convert_and_tag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.test_convert_and_tag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.test_convert_and_tag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test conversion and tagging of a spreadsheet. This is done using
 parallel processing.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.test_convert_only">
-<span class="sig-name descname"><span class="pre">test_convert_only</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.test_convert_only"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.test_convert_only" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test conversion of a spreadsheet. This is done using parallel
-processing.</p>
 </dd></dl>
 
 </dd></dl>

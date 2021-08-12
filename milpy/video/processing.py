@@ -318,7 +318,7 @@ class Spreadsheet:
         metadata_dictionary = self.spreadsheet.make_subler_dictionary(item)
         MP4(handbrake_dictionary["Destination"]).tag(metadata_dictionary)
 
-    def serial_convert_only(self):
+    def serial_convert(self):
         """
         Convert the source to destination using the Handbrake parameters for
         each item. This converts the items one at a time using as many cores as
@@ -330,7 +330,7 @@ class Spreadsheet:
             video = self._set_source_parameters(item)
             video.convert()
 
-    def parallel_convert_only(self):
+    def parallel_convert(self):
         """
         Convert the source to destination using the Handbrake parameters for
         each item. This converts multiple items at once using as many cores as
@@ -343,7 +343,7 @@ class Spreadsheet:
             pool.apply_async(self._parallel_convert, args=(item,))
         cleanup_parallel_processing(pool)
 
-    def test_convert_only(self):
+    def test_convert(self):
         """
         Test conversion of a spreadsheet. This is done using parallel
         processing.
@@ -353,7 +353,7 @@ class Spreadsheet:
             pool.apply_async(self._test_parallel_convert, args=(item,))
         cleanup_parallel_processing(pool)
 
-    def tag_only(self):
+    def tag(self):
         """
         Assuming all source items are MP4 files which only need tagging, tag
         them in parallel using the Subler parameters for each item. This uses

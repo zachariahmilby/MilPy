@@ -116,9 +116,11 @@
 <span class="kn">from</span> <span class="nn">milpy.video._handbrake</span> <span class="kn">import</span> <span class="n">path_to_handbrake_cli</span><span class="p">,</span> \
     <span class="n">VideoConversionOptions</span>
 <span class="kn">from</span> <span class="nn">milpy.video._subler</span> <span class="kn">import</span> <span class="n">path_to_subler_cli</span><span class="p">,</span> \
-    <span class="n">format_subler_metadata_from_dictionary</span><span class="p">,</span> <span class="n">make_temporary_video</span><span class="p">,</span> <span class="n">_Spreadsheet</span>
+    <span class="n">format_subler_metadata_from_dictionary</span><span class="p">,</span> <span class="n">make_temporary_video</span><span class="p">,</span> \
+    <span class="n">SpreadsheetLoader</span>
 <span class="kn">from</span> <span class="nn">milpy.terminal_interface</span> <span class="kn">import</span> <span class="n">construct_terminal_commands</span>
-<span class="kn">from</span> <span class="nn">milpy.parallel_processing</span> <span class="kn">import</span> <span class="n">get_multiprocessing_pool</span><span class="p">,</span> <span class="n">cleanup_parallel_processing</span>
+<span class="kn">from</span> <span class="nn">milpy.parallel_processing</span> <span class="kn">import</span> <span class="n">get_multiprocessing_pool</span><span class="p">,</span> \
+    <span class="n">cleanup_parallel_processing</span>
 
 
 <span class="k">class</span> <span class="nc">_VideoConverter</span><span class="p">:</span>
@@ -126,7 +128,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">converter_options</span>
 
     <span class="k">def</span> <span class="nf">_create_command_of_input_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path_to_subler_cli</span><span class="p">()</span><span class="si">}</span><span class="s1"> &#39;</span> <span class="o">+</span> \
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path_to_handbrake_cli</span><span class="p">()</span><span class="si">}</span><span class="s1"> &#39;</span> <span class="o">+</span> \
                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">source</span><span class="p">)</span><span class="si">}</span><span class="s1"> &#39;</span> <span class="o">+</span> \
                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">destination</span><span class="p">)</span><span class="si">}</span><span class="s1"> &#39;</span> <span class="o">+</span> \
                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">video</span><span class="p">)</span><span class="si">}</span><span class="s1"> &#39;</span> <span class="o">+</span> \
@@ -249,10 +251,11 @@
 <span class="sd">            The metadata tags and values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">temporary_filepath</span> <span class="o">=</span> <span class="n">make_temporary_video</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">format_subler_metadata_from_dictionary</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span>
         <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="n">path_to_subler_cli</span><span class="p">(),</span>
                    <span class="sa">f</span><span class="s2">&quot;-source </span><span class="si">{</span><span class="n">temporary_filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                    <span class="sa">f</span><span class="s2">&quot;-dest </span><span class="si">{</span><span class="n">EscapedString</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                   <span class="sa">f</span><span class="s2">&quot;-metadata </span><span class="si">{</span><span class="n">format_subler_metadata_from_dictionary</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                   <span class="sa">f</span><span class="s2">&quot;-metadata </span><span class="si">{</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                    <span class="sa">f</span><span class="s2">&quot;-language English&quot;</span><span class="p">]</span>
         <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">))</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">temporary_filepath</span><span class="o">.</span><span class="n">original</span><span class="p">)</span></div></div>
@@ -332,7 +335,8 @@
 
     <span class="k">def</span> <span class="nf">_set_converter_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">file_extension</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span>
-        <span class="n">destination</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">file_extension</span><span class="p">,</span> <span class="s1">&#39;, Title 1 (Converted).mp4&#39;</span><span class="p">)</span>
+        <span class="n">destination</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">file_extension</span><span class="p">,</span>
+                                             <span class="s1">&#39;, Title 1 (Converted).mp4&#39;</span><span class="p">)</span>
         <span class="n">converter_options</span> <span class="o">=</span> <span class="n">VideoConversionOptions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">converter_options</span>
 
@@ -366,61 +370,67 @@
 <span class="sd">            The absolute path to the spreadsheet. To make a blank spreadsheet,</span>
 <span class="sd">            use the function `make_empty_metadata_spreadsheet()`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span> <span class="o">=</span> <span class="n">_Spreadsheet</span><span class="p">(</span><span class="n">path_to_spreadsheet</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span> <span class="o">=</span> <span class="n">SpreadsheetLoader</span><span class="p">(</span><span class="n">path_to_spreadsheet</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_get_source_type</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="s2">&quot;.mp4&quot;</span><span class="p">:</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.mp4&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">MP4</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">ext</span> <span class="o">==</span> <span class="s2">&quot;.mkv&quot;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.mkv&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">MKV</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">ext</span> <span class="o">==</span> <span class="s2">&quot;.iso&quot;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.iso&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">ISO</span><span class="p">(</span><span class="n">source_filepath</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Bad input file type.&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_set_source_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="n">handbrake_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_handbrake_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-        <span class="n">video</span> <span class="o">=</span> <span class="n">_get_source_type</span><span class="p">(</span><span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Source&quot;</span><span class="p">])</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source_options</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source_options</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Quality Factor&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination_options</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination_options</span><span class="o">.</span><span class="n">markers</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Chapters&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">audio_titles</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">bitrates</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">mixdowns</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio_options</span><span class="o">.</span><span class="n">track_names</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Track Names&quot;</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture_options</span><span class="o">.</span><span class="n">crop</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Crop&quot;</span><span class="p">]</span>
+        <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_source_type</span><span class="p">(</span><span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Source&quot;</span><span class="p">])</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Quality Factor&quot;</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">markers</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Chapters&quot;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">audio_titles</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio&quot;</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">bitrates</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">mixdowns</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">track_names</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Track Names&quot;</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture</span><span class="o">.</span><span class="n">crop</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Crop&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">video</span>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_parallel_convert</span><span class="p">(</span><span class="n">video</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_parallel_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="n">video</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_test_parallel_convert</span><span class="p">(</span><span class="n">video</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_test_parallel_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="n">video</span><span class="o">.</span><span class="n">test_convert</span><span class="p">()</span>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_parallel_tag</span><span class="p">(</span><span class="n">video</span><span class="p">:</span> <span class="n">MP4</span><span class="p">,</span> <span class="n">metadata_dictionary</span><span class="p">):</span>
-        <span class="n">video</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_parallel_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">handbrake_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_handbrake_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">metadata_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">MP4</span><span class="p">(</span><span class="n">handbrake_dictionary</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_parallel_convert_and_tag</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">metadata_dictionary</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_parallel_convert_and_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="n">video</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
-        <span class="n">output_video</span> <span class="o">=</span> <span class="n">MP4</span><span class="p">(</span><span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination_options</span><span class="o">.</span><span class="n">destination</span><span class="p">)</span>
-        <span class="n">output_video</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span>
+        <span class="n">handbrake_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_handbrake_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">metadata_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">MP4</span><span class="p">(</span><span class="n">handbrake_dictionary</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_test_parallel_convert_and_tag</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">metadata_dictionary</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_test_parallel_convert_and_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="n">video</span><span class="o">.</span><span class="n">test_convert</span><span class="p">()</span>
-        <span class="n">output_video</span> <span class="o">=</span> <span class="n">MP4</span><span class="p">(</span><span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination_options</span><span class="o">.</span><span class="n">destination</span><span class="p">)</span>
-        <span class="n">output_video</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span>
+        <span class="n">handbrake_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_handbrake_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">metadata_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">MP4</span><span class="p">(</span><span class="n">handbrake_dictionary</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">metadata_dictionary</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Spreadsheet.serial_convert_only"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.serial_convert_only">[docs]</a>    <span class="k">def</span> <span class="nf">serial_convert_only</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Spreadsheet.serial_convert"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.serial_convert">[docs]</a>    <span class="k">def</span> <span class="nf">serial_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the source to destination using the Handbrake parameters for</span>
 <span class="sd">        each item. This converts the items one at a time using as many cores as</span>
@@ -432,7 +442,7 @@
             <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">video</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Spreadsheet.parallel_convert_only"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.parallel_convert_only">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_convert_only</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Spreadsheet.parallel_convert"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.parallel_convert">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the source to destination using the Handbrake parameters for</span>
 <span class="sd">        each item. This converts multiple items at once using as many cores as</span>
@@ -442,22 +452,20 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
-            <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_convert</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">video</span><span class="p">,))</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_convert</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
         <span class="n">cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Spreadsheet.test_convert_only"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.test_convert_only">[docs]</a>    <span class="k">def</span> <span class="nf">test_convert_only</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Spreadsheet.test_convert"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.test_convert">[docs]</a>    <span class="k">def</span> <span class="nf">test_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Test conversion of a spreadsheet. This is done using parallel</span>
 <span class="sd">        processing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
-            <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_parallel_convert</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">video</span><span class="p">,))</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_parallel_convert</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
         <span class="n">cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Spreadsheet.tag_only"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.tag_only">[docs]</a>    <span class="k">def</span> <span class="nf">tag_only</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Spreadsheet.tag"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.tag">[docs]</a>    <span class="k">def</span> <span class="nf">tag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Assuming all source items are MP4 files which only need tagging, tag</span>
 <span class="sd">        them in parallel using the Subler parameters for each item. This uses</span>
@@ -465,10 +473,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
-            <span class="n">handbrake_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_handbrake_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-            <span class="n">subler_dictionary</span> <span class="o">=</span> <span class="n">format_subler_metadata_from_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
-            <span class="n">video</span> <span class="o">=</span> <span class="n">MP4</span><span class="p">(</span><span class="n">handbrake_dictionary</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">])</span>
-            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_tag</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">subler_dictionary</span><span class="p">))</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_tag</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
         <span class="n">cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Spreadsheet.serial_convert_and_tag"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.serial_convert_and_tag">[docs]</a>    <span class="k">def</span> <span class="nf">serial_convert_and_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -481,10 +486,11 @@
 <span class="sd">        videos.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
-            <span class="n">subler_dictionary</span> <span class="o">=</span> <span class="n">format_subler_metadata_from_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+            <span class="n">handbrake_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_handbrake_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">subler_dictionary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">video</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
-            <span class="n">video</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">subler_dictionary</span><span class="p">)</span></div>
+            <span class="n">MP4</span><span class="p">(</span><span class="n">handbrake_dictionary</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">subler_dictionary</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Spreadsheet.parallel_convert_and_tag"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.parallel_convert_and_tag">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_convert_and_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -497,9 +503,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
-            <span class="n">subler_dictionary</span> <span class="o">=</span> <span class="n">format_subler_metadata_from_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
-            <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_convert_and_tag</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">subler_dictionary</span><span class="p">))</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_convert_and_tag</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
         <span class="n">cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Spreadsheet.test_convert_and_tag"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.test_convert_and_tag">[docs]</a>    <span class="k">def</span> <span class="nf">test_convert_and_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -509,9 +513,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
-            <span class="n">subler_dictionary</span> <span class="o">=</span> <span class="n">format_subler_metadata_from_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">make_subler_dictionary</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
-            <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_parallel_convert_and_tag</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">subler_dictionary</span><span class="p">))</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_parallel_convert_and_tag</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
         <span class="n">cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span></div></div>
 
 
@@ -683,491 +685,8 @@
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Empty spreadsheet saved to </span><span class="se">\&quot;</span><span class="si">{</span><span class="n">save_path</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">.&quot;</span><span class="p">)</span></div>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<span class="c1"># import os</span>
-<span class="c1"># import pandas as pd</span>
-<span class="c1"># from milpy.miscellaneous import EscapedString</span>
-<span class="c1"># from milpy.video._handbrake import SourceOptions, DestinationOptions, VideoOptions, AudioOptions, PictureOptions, SubtitleOptions</span>
-<span class="c1"># from milpy.parallel_processing import get_multiprocessing_pool, cleanup_parallel_processing</span>
-<span class="c1"># from milpy.terminal_interface import path_to_system_executable, construct_terminal_commands</span>
-<span class="c1"># from milpy.video._spreadsheet_creation import _columns_for_kind, _make_dataframe_from_columns</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _handbrake_cli():</span>
-<span class="c1">#     return path_to_system_executable(&quot;video/anc/HandBrakeCLI&quot;)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _subler_cli():</span>
-<span class="c1">#     return path_to_system_executable(&quot;video/anc/SublerCLI&quot;)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># class _VideoSource:</span>
-<span class="c1">#</span>
-<span class="c1">#     def __init__(self, source_filepath):</span>
-<span class="c1">#         self.source_file = EscapedString(source_filepath)</span>
-<span class="c1">#         self.converter_options: _VideoConverter = None</span>
-<span class="c1">#</span>
-<span class="c1">#     def _raise_exception_if_no_converter_options_set(self):</span>
-<span class="c1">#         if not isinstance(self.converter_options, _VideoConverter):</span>
-<span class="c1">#             raise Exception(&#39;Set converter options before trying to convert a video.&#39;)</span>
-<span class="c1">#</span>
-<span class="c1">#     def initialize_video_converter_options(self, destination_filepath):</span>
-<span class="c1">#</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#         This method sets initial parameters for video conversion. To change the defaults, access via</span>
-<span class="c1">#         `Video.converter_options.&lt;sub_option&gt;.&lt;parameter&gt;`. You can also print a summary with</span>
-<span class="c1">#         `print(Video.converter_options)`.</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#         self.converter_options = _VideoConverter(self.source_file.original, destination_filepath)</span>
-<span class="c1">#</span>
-<span class="c1">#     def print_converter_settings(self):</span>
-<span class="c1">#         print(self.converter_options.__str__())</span>
-<span class="c1">#</span>
-<span class="c1">#     def convert(self):</span>
-<span class="c1">#</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#         Converts source video.</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#         self._raise_exception_if_no_converter_options_set()</span>
-<span class="c1">#         self.converter_options.convert()</span>
-<span class="c1">#</span>
-<span class="c1">#     def test_convert(self):</span>
-<span class="c1">#</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#         Tests video conversion output by quick-converting a 10-second clip.</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#         self._raise_exception_if_no_converter_options_set()</span>
-<span class="c1">#         self.converter_options.test()</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># class Video(_VideoSource):</span>
-<span class="c1">#</span>
-<span class="c1">#     def inspect_metadata(self):</span>
-<span class="c1">#</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#         This method prints the existing metadata in an MP4 file.</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#         options = [_subler_cli(),</span>
-<span class="c1">#                    f&quot;-source {self.source_file}&quot;,</span>
-<span class="c1">#                    f&quot;-listmetadata&quot;]</span>
-<span class="c1">#         os.system(construct_terminal_commands(options))</span>
-<span class="c1">#</span>
-<span class="c1">#     def _create_temporary_video_file(self):</span>
-<span class="c1">#         temporary_video_file = EscapedString(self.source_file.original.replace(&#39;.mp4&#39;, &#39;-temp.mp4&#39;))</span>
-<span class="c1">#         os.system(f&#39;mv {self.source_file} {temporary_video_file}&#39;)</span>
-<span class="c1">#         return temporary_video_file</span>
-<span class="c1">#</span>
-<span class="c1">#     @staticmethod</span>
-<span class="c1">#     def _format_subler_metadata_from_dictionary(metadata_dictionary):</span>
-<span class="c1">#         return &#39;&#39;.join([r&#39;{&quot;%s&quot;:&quot;%s&quot;}&#39; % (key, value) for key, value in metadata_dictionary.items()])</span>
-<span class="c1">#</span>
-<span class="c1">#     def tag(self, metadata_dictionary):</span>
-<span class="c1">#</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#         This method tags a video with metadata.</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#         print(f&#39;Tagging \&quot;{os.path.basename(self.source_file.original)}\&quot;...&#39;)</span>
-<span class="c1">#         temporary_video_file = self._create_temporary_video_file()</span>
-<span class="c1">#         options = [_subler_cli(),</span>
-<span class="c1">#                    f&quot;-source {temporary_video_file}&quot;,</span>
-<span class="c1">#                    f&quot;-dest {self.source_file}&quot;,</span>
-<span class="c1">#                    f&quot;-metadata {self._format_subler_metadata_from_dictionary(metadata_dictionary)}&quot;,</span>
-<span class="c1">#                    f&quot;-language English&quot;]</span>
-<span class="c1">#         os.system(construct_terminal_commands(options))</span>
-<span class="c1">#         os.remove(temporary_video_file.original)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># class _VideoConverter:</span>
-<span class="c1">#</span>
-<span class="c1">#     def __init__(self, input_filepath: str, output_filepath: str):</span>
-<span class="c1">#</span>
-<span class="c1">#         self.source_options = SourceOptions(input_filepath)</span>
-<span class="c1">#         self.destination_options = DestinationOptions(output_filepath)</span>
-<span class="c1">#         self.video_options = VideoOptions()</span>
-<span class="c1">#         self.audio_options = AudioOptions()</span>
-<span class="c1">#         self.picture_options = PictureOptions()</span>
-<span class="c1">#         self.subtitle_options = SubtitleOptions()</span>
-<span class="c1">#         self.combined_options = None</span>
-<span class="c1">#</span>
-<span class="c1">#     def __str__(self):</span>
-<span class="c1">#         print_string = &quot;Video converter settings:\n&quot;</span>
-<span class="c1">#         print_string += &quot;-&quot; * (len(print_string) - 2) + &quot;\n&quot;</span>
-<span class="c1">#         print_string += self.source_options.__str__() + &quot;\n&quot;</span>
-<span class="c1">#         print_string += self.destination_options.__str__() + &quot;\n&quot;</span>
-<span class="c1">#         print_string += self.video_options.__str__() + &quot;\n&quot;</span>
-<span class="c1">#         print_string += self.audio_options.__str__() + &quot;\n&quot;</span>
-<span class="c1">#         if self.subtitle_options.subtitles != &quot;None&quot;:</span>
-<span class="c1">#             print_string += self.picture_options.__str__() + &quot;\n&quot;</span>
-<span class="c1">#             print_string += self.subtitle_options.__str__()</span>
-<span class="c1">#         else:</span>
-<span class="c1">#             print_string += self.picture_options.__str__()</span>
-<span class="c1">#         return print_string</span>
-<span class="c1">#</span>
-<span class="c1">#     def _run_conversion_in_terminal(self):</span>
-<span class="c1">#         os.system(construct_terminal_commands(self.combined_options))</span>
-<span class="c1">#</span>
-<span class="c1">#     def _raise_exception_if_input_and_output_match(self):</span>
-<span class="c1">#         if self.source_options.input.original == self.destination_options.output.original:</span>
-<span class="c1">#             raise Exception(&#39;Input and output files cannot be the same! Either change the output directory or give the &#39;</span>
-<span class="c1">#                             &#39;input file a temporary filename.&#39;)</span>
-<span class="c1">#</span>
-<span class="c1">#     def convert(self):</span>
-<span class="c1">#         self._set_options_list()</span>
-<span class="c1">#         self._raise_exception_if_input_and_output_match()</span>
-<span class="c1">#         self._run_conversion_in_terminal()</span>
-<span class="c1">#</span>
-<span class="c1">#     def _set_test_video_options(self):</span>
-<span class="c1">#         self.video_options.encoder = &#39;x264&#39;</span>
-<span class="c1">#         self.video_options.speed = &#39;ultrafast&#39;</span>
-<span class="c1">#</span>
-<span class="c1">#     def _set_options_list(self):</span>
-<span class="c1">#         self.combined_options = [_handbrake_cli(),</span>
-<span class="c1">#                                  self.source_options.construct_terminal_commands(),</span>
-<span class="c1">#                                  self.destination_options.construct_terminal_commands(),</span>
-<span class="c1">#                                  self.video_options.construct_terminal_commands(),</span>
-<span class="c1">#                                  self.audio_options.construct_terminal_commands(),</span>
-<span class="c1">#                                  self.picture_options.construct_terminal_commands(),</span>
-<span class="c1">#                                  self.subtitle_options.construct_terminal_commands()]</span>
-<span class="c1">#</span>
-<span class="c1">#     def _set_test_video_length(self):</span>
-<span class="c1">#         self.combined_options.append(&#39;--start-at=seconds:0&#39;)</span>
-<span class="c1">#         self.combined_options.append(&#39;--stop-at=seconds:10&#39;)</span>
-<span class="c1">#</span>
-<span class="c1">#     def test(self):</span>
-<span class="c1">#         self._set_test_video_options()</span>
-<span class="c1">#         self._set_options_list()</span>
-<span class="c1">#         self._set_test_video_length()</span>
-<span class="c1">#         self._raise_exception_if_input_and_output_match()</span>
-<span class="c1">#         self._run_conversion_in_terminal()</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># class _SpreadsheetLoader:</span>
-<span class="c1">#</span>
-<span class="c1">#     &quot;&quot;&quot;This class loads a Microsoft Excel metadata spreadsheet and returns the keys and values for a particular entry.&quot;&quot;&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#     def __init__(self, path_to_excel_spreadsheet: str):</span>
-<span class="c1">#         self.data = pd.read_excel(path_to_excel_spreadsheet, dtype=str)</span>
-<span class="c1">#</span>
-<span class="c1">#     def get_keys(self) -&gt; list:</span>
-<span class="c1">#         &quot;&quot;&quot;Get a list of the column names from the spreadsheet.&quot;&quot;&quot;</span>
-<span class="c1">#         return self.data.keys().tolist()</span>
-<span class="c1">#</span>
-<span class="c1">#     def get_values(self, line: int) -&gt; list:</span>
-<span class="c1">#         &quot;&quot;&quot;Get the line number you want, (index starting from 0).&quot;&quot;&quot;</span>
-<span class="c1">#         return self.data.iloc[line].tolist()</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># class _Spreadsheet:</span>
-<span class="c1">#</span>
-<span class="c1">#     def __init__(self, path_to_spreadsheet):</span>
-<span class="c1">#</span>
-<span class="c1">#         self.metadata = _SpreadsheetLoader(path_to_spreadsheet)</span>
-<span class="c1">#         self.n_items = len(self.metadata.data)</span>
-<span class="c1">#         self._keys = self.metadata.get_keys()</span>
-<span class="c1">#</span>
-<span class="c1">#     def _get_item_metadata(self, line):</span>
-<span class="c1">#         return self.metadata.get_values(line)</span>
-<span class="c1">#</span>
-<span class="c1">#     @staticmethod</span>
-<span class="c1">#     def _include_copyright_symbol(subler_dictionary):</span>
-<span class="c1">#         subler_dictionary[&#39;Copyright&#39;] = f&#39;\u00A9 {subler_dictionary[&quot;Copyright&quot;]}&#39;</span>
-<span class="c1">#         return subler_dictionary</span>
-<span class="c1">#</span>
-<span class="c1">#     @staticmethod</span>
-<span class="c1">#     def _handbrake_dictionary_keys():</span>
-<span class="c1">#         return [&quot;Source&quot;, &quot;Destination&quot;, &quot;Title&quot;, &quot;Audio&quot;, &quot;Dimensions&quot;, &quot;Crop&quot;, &quot;Audio Bitrate&quot;, &quot;Audio Mixdown&quot;,</span>
-<span class="c1">#                 &quot;Audio Track Names&quot;, &quot;Subtitle&quot;, &quot;Chapters&quot;, &quot;Quality Factor&quot;]</span>
-<span class="c1">#</span>
-<span class="c1">#     def make_subler_dictionary(self, line):</span>
-<span class="c1">#         subler_dictionary = {key: value for key, value in zip(self._keys, self._get_item_metadata(line))</span>
-<span class="c1">#                              if key not in self._handbrake_dictionary_keys()}</span>
-<span class="c1">#         return self._include_copyright_symbol(subler_dictionary)</span>
-<span class="c1">#</span>
-<span class="c1">#     def make_handbrake_dictionary(self, line):</span>
-<span class="c1">#         return {key: value for key, value in zip(self._keys, self._get_item_metadata(line))</span>
-<span class="c1">#                 if key in self._handbrake_dictionary_keys()}</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _set_source_parameters(spreadsheet: _Spreadsheet, item: int):</span>
-<span class="c1">#     handbrake_metadata = spreadsheet.make_handbrake_dictionary(item)</span>
-<span class="c1">#     source = _VideoSource(handbrake_metadata[&quot;Source&quot;])</span>
-<span class="c1">#     destination = handbrake_metadata[&quot;Destination&quot;]</span>
-<span class="c1">#     source.initialize_video_converter_options(destination)</span>
-<span class="c1">#     source.converter_options.source_options.title = handbrake_metadata[&quot;Title&quot;]</span>
-<span class="c1">#     source.converter_options.source_options.quality = handbrake_metadata[&quot;Quality Factor&quot;]</span>
-<span class="c1">#     source.converter_options.audio_options.audio_titles = handbrake_metadata[&quot;Audio&quot;]</span>
-<span class="c1">#     source.converter_options.audio_options.bitrates = handbrake_metadata[&quot;Audio Bitrate&quot;]</span>
-<span class="c1">#     source.converter_options.audio_options.mixdowns = handbrake_metadata[&quot;Audio Mixdown&quot;]</span>
-<span class="c1">#     source.converter_options.audio_options.track_names = handbrake_metadata[&quot;Audio Track Names&quot;]</span>
-<span class="c1">#     source.converter_options.picture_options.width = handbrake_metadata[&quot;Dimensions&quot;].split(&quot;x&quot;)[0]</span>
-<span class="c1">#     source.converter_options.picture_options.height = handbrake_metadata[&quot;Dimensions&quot;].split(&quot;x&quot;)[1]</span>
-<span class="c1">#     source.converter_options.picture_options.crop = handbrake_metadata[&quot;Crop&quot;]</span>
-<span class="c1">#     return source, destination</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _test_convert_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):</span>
-<span class="c1">#     source, destination = _set_source_parameters(spreadsheet, item)</span>
-<span class="c1">#     source.test_convert()</span>
-<span class="c1">#     return destination</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _convert_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):</span>
-<span class="c1">#     source, destination = _set_source_parameters(spreadsheet, item)</span>
-<span class="c1">#     source.convert()</span>
-<span class="c1">#     return destination</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _tag_spreadsheet_item(spreadsheet: _Spreadsheet, item: int, input_filepath: str):</span>
-<span class="c1">#     subler_metadata = spreadsheet.make_subler_dictionary(item)</span>
-<span class="c1">#     video = Video(input_filepath)</span>
-<span class="c1">#     video.tag(subler_metadata)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _convert_and_tag_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):</span>
-<span class="c1">#     output = _convert_spreadsheet_item(spreadsheet, item)</span>
-<span class="c1">#     _tag_spreadsheet_item(spreadsheet, item, output)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def _test_convert_and_tag_spreadsheet_item(spreadsheet: _Spreadsheet, item: int):</span>
-<span class="c1">#     output = _test_convert_spreadsheet_item(spreadsheet, item)</span>
-<span class="c1">#     _tag_spreadsheet_item(spreadsheet, item, output)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def convert_and_tag_spreadsheet_in_serial(path_to_spreadsheet):</span>
-<span class="c1">#     spreadsheet = _Spreadsheet(path_to_spreadsheet)</span>
-<span class="c1">#     [_convert_and_tag_spreadsheet_item(spreadsheet, item) for item in range(spreadsheet.n_items)]</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def convert_and_tag_spreadsheet_in_parallel(path_to_spreadsheet):</span>
-<span class="c1">#     spreadsheet = _Spreadsheet(path_to_spreadsheet)</span>
-<span class="c1">#     pool = get_multiprocessing_pool()</span>
-<span class="c1">#     [pool.apply_async(_convert_and_tag_spreadsheet_item, args=(spreadsheet, item,)) for item in range(spreadsheet.n_items)]</span>
-<span class="c1">#     cleanup_parallel_processing(pool)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def convert_and_tag_spreadsheet_test(path_to_spreadsheet):</span>
-<span class="c1">#     spreadsheet = _Spreadsheet(path_to_spreadsheet)</span>
-<span class="c1">#     pool = get_multiprocessing_pool()</span>
-<span class="c1">#     [pool.apply_async(_test_convert_and_tag_spreadsheet_item, args=(spreadsheet, item,)) for item in range(spreadsheet.n_items)]</span>
-<span class="c1">#     cleanup_parallel_processing(pool)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def convert_only_in_serial(path_to_spreadsheet):</span>
-<span class="c1">#     spreadsheet = _Spreadsheet(path_to_spreadsheet)</span>
-<span class="c1">#     [_convert_spreadsheet_item(spreadsheet, item) for item in range(spreadsheet.n_items)]</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def convert_only_in_parallel(path_to_spreadsheet):</span>
-<span class="c1">#     spreadsheet = _Spreadsheet(path_to_spreadsheet)</span>
-<span class="c1">#     pool = get_multiprocessing_pool()</span>
-<span class="c1">#     [pool.apply_async(_convert_spreadsheet_item, args=(spreadsheet, item,)) for item in range(spreadsheet.n_items)]</span>
-<span class="c1">#     cleanup_parallel_processing(pool)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def tag_only(path_to_spreadsheet):</span>
-<span class="c1">#     spreadsheet = _Spreadsheet(path_to_spreadsheet)</span>
-<span class="c1">#     pool = get_multiprocessing_pool()</span>
-<span class="c1">#     for item in range(spreadsheet.n_items):</span>
-<span class="c1">#         handbrake_metadata = spreadsheet.make_handbrake_dictionary(item)</span>
-<span class="c1">#         source_file = handbrake_metadata[&quot;Destination&quot;]</span>
-<span class="c1">#         pool.apply_async(_tag_spreadsheet_item, args=(spreadsheet, item, source_file))</span>
-<span class="c1">#     cleanup_parallel_processing(pool)</span>
-<span class="c1">#</span>
-<span class="c1">#</span>
-<span class="c1"># def make_empty_metadata_spreadsheet(save_directory: str, kind: str):</span>
-<span class="c1">#</span>
-<span class="c1">#     &quot;&quot;&quot;</span>
-<span class="c1">#     This function saves an empty Microsoft Excel metadata spreadsheet for you to fill in. Note that not all fields need</span>
-<span class="c1">#     to be filled out for each item or even an entire spreadsheet, but are the recommended fields for the video type.</span>
-<span class="c1">#</span>
-<span class="c1">#     Parameters</span>
-<span class="c1">#     ----------</span>
-<span class="c1">#     save_directory</span>
-<span class="c1">#         The directory in which you want the empty spreadsheet saved.</span>
-<span class="c1">#     kind</span>
-<span class="c1">#         The kind of spreadsheet (choose between &quot;tv&quot; or &quot;movie&quot;).</span>
-<span class="c1">#</span>
-<span class="c1">#     Examples</span>
-<span class="c1">#     --------</span>
-<span class="c1">#     For a TV spreadsheet:</span>
-<span class="c1">#</span>
-<span class="c1">#     &gt;&gt;&gt; make_empty_metadata_spreadsheet(&quot;/path/to/directory&quot;, kind=&#39;TV&#39;)</span>
-<span class="c1">#     Empty spreadsheet saved to &quot;/path/to/directory/empty_metadata_tv.xlsx.&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#     For a movie spreadsheet:</span>
-<span class="c1">#</span>
-<span class="c1">#     &gt;&gt;&gt; make_empty_metadata_spreadsheet(&quot;/path/to/directory&quot;, kind=&#39;movie&#39;)</span>
-<span class="c1">#     Empty spreadsheet saved to &quot;/path/to/directory/empty_metadata_movie.xlsx.&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#     Notes</span>
-<span class="c1">#     -----</span>
-<span class="c1">#     TV Shows:</span>
-<span class="c1">#      - **Name:** The episode title.</span>
-<span class="c1">#      - **Artist:** The name of the series.</span>
-<span class="c1">#      - **Album Artist:** The name of the series.</span>
-<span class="c1">#      - **Album:** The name of the series and the season number, e.g., &quot;Star Trek, Season 1.&quot;</span>
-<span class="c1">#      - **Genre:** Your choice, e.g., &quot;Science Fiction&quot; or &quot;Situation Comedy.&quot;</span>
-<span class="c1">#      - **Release Date:** The date of first broadcast in format YYYY-MM-DD. If it&#39;s a special feature, I usually do the</span>
-<span class="c1">#        release date of the media I&#39;m getting the video from, like the DVD or Blu-ray release date.</span>
-<span class="c1">#      - **Track #:** For episodes, I use the format #/total, so episode 7 in a season of 22 episodes would be &quot;7/22&quot;. For</span>
-<span class="c1">#        special features, I start at 101, so special feature 3 out of 12 would be &quot;103/112&quot;.</span>
-<span class="c1">#      - **TV Show:** The name of the series.</span>
-<span class="c1">#      - **TV Episode ID:** The internal production ID for the episode (not all series have one).</span>
-<span class="c1">#      - **TV Season:** The season number (just the number).</span>
-<span class="c1">#      - **TV Episode #:** The episode number (just the number; if multiple episodes combined into one, I guess just choose</span>
-<span class="c1">#        the number of the first episode).</span>
-<span class="c1">#      - **TV Network:** The network on which the show originall broadcast. For special features, I usually put &quot;DVD&quot; or</span>
-<span class="c1">#        &quot;Blu-ray&quot; depending on the source.</span>
-<span class="c1">#      - **Description:** The episode description.</span>
-<span class="c1">#      - **Series Description:** A general series description.</span>
-<span class="c1">#      - **Copyright:** The copyright information, e.g., &quot;Production House, LLC. All Rights Reserved.&quot; The copyright symbol</span>
-<span class="c1">#        is added automatically behind-the-scenes.</span>
-<span class="c1">#      - **Media Kind:** 10 (this indicates a TV show)</span>
-<span class="c1">#      - **Cover Art:** The absolute path to the artwork you want for this item.</span>
-<span class="c1">#      - **Rating:** For the US, the options are listed below (they are a little hard to find). For a series from another</span>
-<span class="c1">#        country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()</span>
-<span class="c1">#        function to see what the correct format is.</span>
-<span class="c1">#</span>
-<span class="c1">#        - us-tv|TV-Y|100|</span>
-<span class="c1">#        - us-tv|TV-Y7|200|</span>
-<span class="c1">#        - us-tv|TV-G|300|</span>
-<span class="c1">#        - us-tv|TV-PG|400|</span>
-<span class="c1">#        - us-tv|TV-14|500|</span>
-<span class="c1">#        - us-tv|TV-MA|600|</span>
-<span class="c1">#        - us-tv|Unrated|???|</span>
-<span class="c1">#</span>
-<span class="c1">#      - **Cast:** The names of the main cast members, separated by commas (for names with commas, surround with quotation</span>
-<span class="c1">#        marks like, e.g., Patrick Stewart, &quot;Patrick Stewart, Jr.&quot;</span>
-<span class="c1">#      - **Source:** The absolute path to the source, either a disc image `.iso` or a video file.</span>
-<span class="c1">#      - **Destination:** The absolute path to where you want the final video to be saved. I usually prefix the file with it&#39;s</span>
-<span class="c1">#        number, e.g., /.../07 Episode 7.mp4 for a main episode or /.../Special Features/103 Special Feature.mp4</span>
-<span class="c1">#      - **Title:** The video title, meaning which video track to convert. Discs have multiple, individual videos are just</span>
-<span class="c1">#        title &quot;1&quot;.</span>
-<span class="c1">#      - **Dimensions:** The dimensions of the final video separated by an &quot;x&quot;, e.g., &quot;854x480&quot; or &quot;640x480&quot; for SD.</span>
-<span class="c1">#      - **Crop:** Some videos files have the letterbox black bars encoded. Crop can remove them if you know the relative</span>
-<span class="c1">#        sizes. The format is #:#:#:#, with the numbers referring to &lt;top:bottom:left:right&gt;.</span>
-<span class="c1">#      - **Audio:** The audio title(s), separated by a comma. You might want multiple audio tracks (like a commentary).</span>
-<span class="c1">#      - **Audio Bitrate:** The bitrates for each of the audio titles, using 64-bits per channel. This means 64 for mono,</span>
-<span class="c1">#        128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.</span>
-<span class="c1">#      - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.</span>
-<span class="c1">#      - **Audio Track Names:** What to name the audio tracks, like &quot;Mono Audio&quot;, &quot;Stereo Audio&quot;, &quot;5.1 Surround Sound&quot;,</span>
-<span class="c1">#        &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. If the name has commas in it, it will need to be in</span>
-<span class="c1">#        quotation marks.</span>
-<span class="c1">#      - **HD Video:** Video definition flag.</span>
-<span class="c1">#</span>
-<span class="c1">#        - &quot;0&quot; for 480p/576p Standard Definition</span>
-<span class="c1">#        - &quot;1&quot; for 720p High Definition</span>
-<span class="c1">#        - &quot;2&quot; for 1080p Full High Definition</span>
-<span class="c1">#        - &quot;3&quot; for 2160p 4K Ultra High Definition</span>
-<span class="c1">#</span>
-<span class="c1">#      - **Quality Factor:** Handbrake quality factor.</span>
-<span class="c1">#</span>
-<span class="c1">#        - 20±2 for 480p/576p Standard Definition</span>
-<span class="c1">#        - 21±2 for 720p High Definition</span>
-<span class="c1">#        - 22±2 for 1080p Full High Definition</span>
-<span class="c1">#        - 25±2 for 2160p 4K Ultra High Definition</span>
-<span class="c1">#</span>
-<span class="c1">#      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
-<span class="c1">#      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
-<span class="c1">#        those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
-<span class="c1">#        might be &quot;3,The Third Chapter&quot;.</span>
-<span class="c1">#</span>
-<span class="c1">#     Movies:</span>
-<span class="c1">#      - **Name:** The name of the movie.</span>
-<span class="c1">#      - **Genre:** Your choice, e.g., &quot;Science Fiction&quot; or &quot;Comedy.&quot;</span>
-<span class="c1">#      - **Release Date:** The date of the film in format YYYY-MM-DD. If it&#39;s a special feature, I usually do the release</span>
-<span class="c1">#        date of the media I&#39;m getting the video from, like the DVD or Blu-ray release date.</span>
-<span class="c1">#      - **Description:** The episode description.</span>
-<span class="c1">#      - **Copyright:** The copyright information, e.g., &quot;Production House, LLC. All Rights Reserved.&quot; The copyright symbol</span>
-<span class="c1">#        is added automatically behind-the-scenes.</span>
-<span class="c1">#      - **Media Kind:** 9 (this indicates a movie)</span>
-<span class="c1">#      - **Cover Art:** The absolute path to the artwork you want for this item.</span>
-<span class="c1">#      - **Rating:** For the US, the options are listed below (they are a little hard to find). For a series from another</span>
-<span class="c1">#        country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()</span>
-<span class="c1">#        function to see what the correct format is.</span>
-<span class="c1">#</span>
-<span class="c1">#        - mpaa|NR|000|</span>
-<span class="c1">#        - mpaa|G|100|</span>
-<span class="c1">#        - mpaa|PG|200|</span>
-<span class="c1">#        - mpaa|PG-13|300|</span>
-<span class="c1">#        - mpaa|R|400|</span>
-<span class="c1">#        - mpaa|NC-17|500|</span>
-<span class="c1">#        - mpaa|Unrated|???|</span>
-<span class="c1">#</span>
-<span class="c1">#      - **Rating Annotation:** any reasons listed for the given rating, e.g., &quot;violence and sexual content.&quot;</span>
-<span class="c1">#      - **Cast:** The names of the main cast members, separated by commas (for names with commas, surround with quotation</span>
-<span class="c1">#        marks like, e.g., Patrick Stewart, &quot;Patrick Stewart, Jr.&quot;</span>
-<span class="c1">#      - **Director:** The names of the director(s), same comma considerations as with cast.</span>
-<span class="c1">#      - **Producers:** The names of the producer(s), same comma considerations as with cast.</span>
-<span class="c1">#      - **Screenwriters:** The names of the screenwriter(s), same comma considerations as with cast.</span>
-<span class="c1">#      - **Source:** The absolute path to the source, either a disc image `.iso` or a video file.</span>
-<span class="c1">#      - **Destination:** The absolute path to where you want the final video to be saved. I don&#39;t usually prefix the main</span>
-<span class="c1">#        movie file, e.g., /.../Film Name.mp4, but for a special feature /.../Special Features/103 Special Feature.mp4</span>
-<span class="c1">#      - **Title:** The video title, meaning which video track to convert. Discs have multiple, individual videos are just</span>
-<span class="c1">#        title &quot;1&quot;.</span>
-<span class="c1">#      - **Dimensions:** The dimensions of the final video separated by an &quot;x&quot;, e.g., &quot;854x480&quot; or &quot;640x480&quot; for SD.</span>
-<span class="c1">#      - **Crop:** Some videos files have the letterbox black bars encoded. Crop can remove them if you know the relative</span>
-<span class="c1">#        sizes. The format is #:#:#:#, with the numbers referring to &lt;top:bottom:left:right&gt;.</span>
-<span class="c1">#      - **Audio:** The audio title(s), separated by a comma. You might want multiple audio tracks (like a commentary).</span>
-<span class="c1">#      - **Audio Bitrate:** The bitrates for each of the audio titles, using 64-bits per channel. This means 64 for mono,</span>
-<span class="c1">#        128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.</span>
-<span class="c1">#      - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.</span>
-<span class="c1">#      - **Audio Track Names:** What to name the audio tracks, like &quot;Mono Audio&quot;, &quot;Stereo Audio&quot;, &quot;5.1 Surround Sound&quot;,</span>
-<span class="c1">#        &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. If the name has commas in it, it will need to be in</span>
-<span class="c1">#        quotation marks. If it has quotation marks it might break entirely. Best to check in advance or be sure to use</span>
-<span class="c1">#        single quotes.</span>
-<span class="c1">#      - **HD Video:** Video definition flag.</span>
-<span class="c1">#</span>
-<span class="c1">#        - &quot;0&quot; for 480p/576p Standard Definition</span>
-<span class="c1">#        - &quot;1&quot; for 720p High Definition</span>
-<span class="c1">#        - &quot;2&quot; for 1080p Full High Definition</span>
-<span class="c1">#        - &quot;3&quot; for 2160p 4K Ultra High Definition</span>
-<span class="c1">#</span>
-<span class="c1">#      - **Quality Factor:** Handbrake quality factor.</span>
-<span class="c1">#</span>
-<span class="c1">#        - 20±2 for 480p/576p Standard Definition</span>
-<span class="c1">#        - 21±2 for 720p High Definition</span>
-<span class="c1">#        - 22±2 for 1080p Full High Definition</span>
-<span class="c1">#        - 25±2 for 2160p 4K Ultra High Definition</span>
-<span class="c1">#</span>
-<span class="c1">#      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
-<span class="c1">#      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
-<span class="c1">#        those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
-<span class="c1">#        might be &quot;3,The Third Chapter&quot;.</span>
-<span class="c1">#     &quot;&quot;&quot;</span>
-<span class="c1">#</span>
-<span class="c1">#     kind, columns = _columns_for_kind(kind)</span>
-<span class="c1">#     save_path = os.path.join(save_directory, f&quot;empty_metadata_{kind}.xlsx&quot;)</span>
-<span class="c1">#     _make_dataframe_from_columns(columns).to_excel(save_path, index=False)</span>
-<span class="c1">#</span>
-<span class="c1">#     print(f&quot;Empty spreadsheet saved to \&quot;{save_path}\&quot;.&quot;)</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">Spreadsheet</span><span class="p">(</span><span class="s1">&#39;/Volumes/Media HD/Disc Images/Frasier/metadata.xlsx&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">test_convert_and_tag</span><span class="p">()</span>
 </pre></div>
 
               </div>
