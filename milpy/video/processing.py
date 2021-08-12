@@ -571,7 +571,3 @@ def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
     _make_dataframe_from_columns(columns).to_excel(save_path, index=False)
 
     print(f"Empty spreadsheet saved to \"{save_path}\".")
-
-
-if __name__ == "__main__":
-    Spreadsheet('/Volumes/Media HD/Disc Images/Frasier/metadata.xlsx').test_convert_and_tag()
