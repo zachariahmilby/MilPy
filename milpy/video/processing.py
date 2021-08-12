@@ -114,6 +114,13 @@ class MP4:
         converter_options = VideoConversionOptions(self.file_path, destination)
         return converter_options
 
+    def inspect_metadata(self):
+        """
+        Examine any existing metadata in an MP4 file.
+        """
+        command = f'{path_to_subler_cli()} -source {self.terminal_file_path} -listmetadata'
+        os.system(command)
+
     def convert(self):
         """
         Convert the video using the parameters in the `converter_options`

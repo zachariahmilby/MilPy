@@ -226,6 +226,13 @@
         <span class="n">converter_options</span> <span class="o">=</span> <span class="n">VideoConversionOptions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">converter_options</span>
 
+<div class="viewcode-block" id="MP4.inspect_metadata"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.MP4.inspect_metadata">[docs]</a>    <span class="k">def</span> <span class="nf">inspect_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Examine any existing metadata in an MP4 file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path_to_subler_cli</span><span class="p">()</span><span class="si">}</span><span class="s1"> -source </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">terminal_file_path</span><span class="si">}</span><span class="s1"> -listmetadata&#39;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">command</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="MP4.convert"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.MP4.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the video using the parameters in the `converter_options`</span>
