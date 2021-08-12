@@ -1,358 +1,411 @@
 import os
-import subprocess
-import sys
-import glob
-import numpy as np
-import pandas as pd
-import re
-from typing import Iterable
-import multiprocessing as mp
-from milpy.miscellaneous import _EscapedString, _ValidatePath, _ValidateDirectory
-from milpy.video._handbrake import _construct_terminal_commands, SourceOptions, DestinationOptions, VideoOptions, AudioOptions, PictureOptions, SubtitleOptions
+from pathlib import Path
+from milpy.miscellaneous import EscapedString
+from milpy.video._handbrake import path_to_handbrake_cli, \
+    VideoConversionOptions
+from milpy.video._subler import path_to_subler_cli, \
+    format_subler_metadata_from_dictionary, make_temporary_video, \
+    SpreadsheetLoader
+from milpy.terminal_interface import construct_terminal_commands
+from milpy.parallel_processing import get_multiprocessing_pool, \
+    cleanup_parallel_processing
 
 
-def _path_to_system_executable(executable: str) -> str:
-    path = _EscapedString(os.path.join(os.path.dirname(__file__), executable))
-    os.system(f'chmod 777 {path}')
-    return path
+class _VideoConverter:
+    def __init__(self, converter_options: VideoConversionOptions):
+        self.options = converter_options
 
-
-def _run_conversion_in_terminal(options_list):
-    os.system(_construct_terminal_commands(options_list))
-
-
-class VideoConverter:
-
-    """
-    This class sets up HandBrakeCLI command-line flags and provides a method for initiating video conversion using the
-    stored parameters. These parameters can be changed after creating an instance of the class. The default behavior is
-    to convert the video with the same parameters as the source.
-    """
-
-    def __init__(self, input_filepath: str, output_filepath: str):
-
-        """
-        Parameters
-        ----------
-        input_filepath
-            The location of the video source, either a DVD or Blu-ray disc image in `.iso` format or a video file like
-            an MP4 or MKV.
-        output_filepath
-            The absolute path with filename of the name/extension and location of the converted video.
-
-        Examples
-        --------
-        To setup a video conversion, create an instance of the VideoConverter class:
-
-        >>> converter = VideoConverter("/path/to/disc.iso", "/path/to/output.mp4")
-        >>> print(converter)
-        Video converter settings:
-        ------------------------
-        Source options:
-           Input: /path/to/disc.iso
-           Title: 1
-        Destination options:
-           Output: /path/to/output.mp4
-           Video format: av_mp4
-           Markers: True
-           Optimize: True
-           Align A/V: True
-        Video options:
-           Encoder: x265
-           Speed (encoder preset): fast
-           Quality: 20
-           Two-pass: False
-           Framerate: variable
-        Audio options:
-           Audio titles: 1
-           Encoder: ca_aac
-           Bitrate(s) (kbps): Same as source
-           Mixdown(s): Same as source
-           Sample rate(s) (kHz): Same as source
-           Track name(s): Same as source
-        Picture options:
-           Width: Same as source
-           Height: Same as source
-           Crop: 0:0:0:0
-           Anamorphic: off
-           Comb-detection: on
-           Decomb method: bob
-
-        To change the input title:
-
-        >>> converter = VideoConverter("/path/to/disc.iso", "/path/to/output.mp4")
-        >>> converter.source_options.title = "2"
-        >>> print(converter.source_options.__str__())
-        Source options:
-           Input: /path/to/disc.iso
-           Title: 2
-
-        You shouldn't need to change any of the destination options. You have to set the output filepath when creating an
-        instance of `VideoConverter`, and the settings `video_format`, `markers`, `optimize` and `align_av` are defaults
-        appropriate for almost all situations.
-
-        To change the video options:
-
-        >>> converter = VideoConverter("/path/to/disc.iso", "/path/to/output.mp4")
-        >>> converter.video_options.encoder = "x264"
-        >>> converter.video_options.speed = "ultrafast"
-        >>> converter.video_options.quality = "47"
-        >>> converter.video_options.two_pass = True
-        >>> print(converter.video_options.__str__())
-        Video options:
-           Encoder: x264
-           Speed (encoder preset): ultrafast
-           Quality: 47
-           Two-pass: True
-           Framerate: variable
-
-        To change the audio options (note there is a method for the audio track names):
-
-        >>> converter = VideoConverter("/path/to/disc.iso", "/path/to/output.mp4")
-        >>> converter.audio_options.audio_titles = "1,2"
-        >>> converter.audio_options.encoder = "ca_aac"
-        >>> converter.audio_options.bitrates = "384,128"
-        >>> converter.audio_options.mixdowns = "5point1,stereo"
-        >>> converter.audio_options.sample_rates = "48,48"
-        >>> converter.audio_options.names = "5.1 Surround Sound,Stereo"
-        >>> print(converter.audio_options.__str__())
-        Audio options:
-           Audio titles: 1,2
-           Encoder: ca_aac
-           Bitrate(s) (kbps): 384,128
-           Mixdown(s): 5point1,stereo
-           Sample rate(s) (kHz): 48,48
-           Track name(s): 5.1 Surround Sound,Stereo
-
-        To change the picture options:
-
-        >>> converter = VideoConverter("/path/to/disc.iso", "/path/to/output.mp4")
-        >>> converter.picture_options.width = '1920'
-        >>> converter.picture_options.height = '1080'
-        >>> converter.picture_options.crop = '0:0:20:20'  # cropping 20 pixels from the top and bottom
-        >>> print(converter.picture_options.__str__())
-        Picture options:
-           Width: 1920
-           Height: 1080
-           Crop: 0:0:20:20
-           Anamorphic: off
-           Comb-detection: on
-           Decomb method: bob
-
-        To add a subtitle track (for now, it has to be burned-in):
-
-        >>> converter = VideoConverter("/path/to/disc.iso", "/path/to/output.mp4")
-        >>> converter.subtitle_options.subtitles = "1"
-        >>> print(converter.subtitle_options.__str__())
-        Subtitle options:
-           Track: 1
-           Burned-in: on
-
-        Finally, once you've set everything the way you want it, you can begin the video conversion using the method
-        `convert()`.
-
-        >>> converter = VideoConverter("/path/to/disc.iso", "/path/to/output.mp4")
-        >>> converter.convert()
-        """
-
-        self.handbrake_cli = _path_to_system_executable("anc/HandBrakeCLI")
-        self.source_options = SourceOptions(input_filepath)
-        self.destination_options = DestinationOptions(output_filepath)
-        self.video_options = VideoOptions()
-        self.audio_options = AudioOptions()
-        self.picture_options = PictureOptions()
-        self.subtitle_options = SubtitleOptions()
-        self.options = None
-
-    def __str__(self):
-        print_string = "Video converter settings:\n"
-        print_string += "-" * (len(print_string) - 2) + "\n"
-        print_string += self.source_options.__str__() + "\n"
-        print_string += self.destination_options.__str__() + "\n"
-        print_string += self.video_options.__str__() + "\n"
-        print_string += self.audio_options.__str__() + "\n"
-        if self.subtitle_options.subtitles != "None":
-            print_string += self.picture_options.__str__() + "\n"
-            print_string += self.subtitle_options.__str__()
-        else:
-            print_string += self.picture_options.__str__()
-        return print_string
-
-    def convert(self):
-
-        """
-        Initiates the video conversion with HandBrakeCLI using set input parameters.
-        """
-
-        self._set_options_list()
-        _run_conversion_in_terminal(self.options)
+    def _create_command_of_input_options(self):
+        return f'{path_to_handbrake_cli()} ' + \
+               f'{repr(self.options.source)} ' + \
+               f'{repr(self.options.destination)} ' + \
+               f'{repr(self.options.video)} ' + \
+               f'{repr(self.options.audio)} ' + \
+               f'{repr(self.options.picture)} ' + \
+               f'{repr(self.options.subtitle)} '
 
     def _set_test_video_options(self):
-        self.video_options.encoder = 'x264'
-        self.video_options.speed = 'ultrafast'
+        self.options.video.encoder = 'x264'
+        self.options.video.speed = 'ultrafast'
 
-    def _set_options_list(self):
-        self.options = [self.handbrake_cli,
-                        self.source_options.construct_terminal_commands(),
-                        self.destination_options.construct_terminal_commands(),
-                        self.video_options.construct_terminal_commands(),
-                        self.audio_options.construct_terminal_commands(),
-                        self.picture_options.construct_terminal_commands(),
-                        self.subtitle_options.construct_terminal_commands()]
+    @staticmethod
+    def _add_10_second_test_to_options(options: str):
+        return f'{options} ' + '--start-at=seconds:0 ' + '--stop-at=seconds:10'
 
-    def _set_test_video_length(self):
-        self.options.append('--start-at=seconds:0')
-        self.options.append('--stop-at=seconds:10')
+    def convert(self):
+        command = self._create_command_of_input_options()
+        os.system(command)
 
     def test(self):
-
-        """
-        Tests video conversion output by quick-converting a 10-second clip.
-        """
-
         self._set_test_video_options()
-        self._set_options_list()
-        self._set_test_video_length()
-        _run_conversion_in_terminal(self.options)
+        options = self._create_command_of_input_options()
+        options = self._add_10_second_test_to_options(options)
+        os.system(options)
 
 
-def video_inspector(source_filepath: str):
+class _File(str):
 
-    """
-    This function prints the existing metadata from an MP4 file in the console using the SublerCLI executable.
-
-    Parameters
-    ----------
-    source_filepath
-        The absolute path to the source file.
-
-    Examples
-    --------
-    >>> video_inspector('/path/to/video.mp4')
-    """
-
-    options = [_path_to_system_executable("anc/SublerCLI"),
-               f"-source {_EscapedString(source_filepath)}",
-               f"-listmetadata"]
-    _run_conversion_in_terminal(options)
-
-
-def _create_metadata_dictionaries(keys: Iterable[str], values: Iterable[str]) -> dict:
-
-    """
-    This function takes a set of metadata keys and values and converts them into a dictionaries for HandBrake and
-    Subler settings.
-
-    Parameters
-    ----------
-    keys
-        An iterable of dictionary keys.
-    values
-        An iterable of values for the dictionary keys.
-
-    Examples
-    --------
-    >>> metadata = MetadataLoader("/path/to/metadata.xlsx")
-    >>> line = 17
-    >>> keys_list = metadata.get_keys()
-    >>> values_list = metadata.get_values(line)
-    >>> handbrake_dict, subler_dict = _create_metadata_dictionaries(keys_list, values_list)
-    """
-
-    excluded_keys = ["Source", "Destination", "Title", "Audio", "Dimensions", "Crop", "Audio Bitrate", "Audio Mixdown", "Audio Notes",
-                     "Subtitle", "Chapters", "Quality Factor"]
-    subler_dictionary = {key: value for key, value in zip(keys, values) if key not in excluded_keys}
-    subler_dictionary['Copyright'] = f'\u00A9 {subler_dictionary["Copyright"]}'
-    handbrake_dictionary = {key: value for key, value in zip(keys, values) if key in excluded_keys}
-    return handbrake_dictionary, subler_dictionary
-
-
-class MetadataLoader:
-
-    """
-    This class loads a Microsoft Excel metadata spreadsheet and returns the keys and values for a particular entry.
-    """
-
-    def __init__(self, path_to_excel_spreadsheet: str):
-
-        self.data = pd.read_excel(path_to_excel_spreadsheet, dtype=str)
-
-    def get_keys(self) -> list:
+    def __new__(cls, path: str, extension: str, *args, **kwargs):
 
         """
-        Get a list of the column names from the spreadsheet.
+        Instances of this class represent a file that exists on this computer.
+
+        Parameters
+        ----------
+        path
+            The absolute path to a file on this computer.
+        extension
+            The extension the input path must have.
+
+        Raises
+        ------
+        ValueError
+            Raised if the input file path points to a file that does not exist.
+        TypeError
+            Raised if the input file path does not have the specified extension.
         """
 
-        return self.data.keys().tolist()
+        cls._raise_value_error_if_path_does_not_exist(path)
+        cls._raise_type_error_if_input_has_wrong_extension(path, extension)
+        return super().__new__(cls, path, *args, **kwargs)
 
-    def get_values(self, line: int) -> list:
+    @staticmethod
+    def _raise_value_error_if_path_does_not_exist(path: str):
+        if not Path(path).exists():
+            message = 'The input file path does not exist.'
+            raise ValueError(message)
 
-        """
-        Get the line number you want, (index starting from 0).
-        """
+    @staticmethod
+    def _raise_type_error_if_input_has_wrong_extension(path: str, ext: str):
+        if Path(path).suffix != f'.{ext}':
+            message = f'The input file path is not a {ext} file.'
+            raise TypeError(message)
 
-        return self.data.iloc[line].tolist()
 
-
-class _VideoTagger:
-
+class MP4:
     """
-    This class takes an MP4 file and tags it with metadata.
+    Instances of this class represent an MP4 file which is accessible to
+    the computer.
     """
 
-    def __init__(self, source_filepath: str, destination_filepath: str, metadata: dict):
-
+    def __init__(self, file_path: str):
         """
         Parameters
         ----------
-        source_filepath
-            The absolute filepath to the source file (likely a temporary file).
-        destination_filepath
-            This is the filename and absolute filepath for the tagged video. Cannot be the same as the source filepath.
-        metadata
-            A dictionary of metadata tags and values.
+        file_path
+            The absolute path to a MP4 file.
 
-        Examples
-        --------
-        Load metadata from a metadata.xlsx spreadsheet, then apply the video tags for line 17.
-
-        >>> metadata_dataframe = MetadataLoader("/path/to/metadata.xlsx")
-        >>> line = 17
-        >>> keys_list = metadata_dataframe.get_keys()
-        >>> values_list = metadata_dataframe.get_values(line)
-        >>> handbrake_dict, subler_dict = _create_metadata_dictionaries(keys_list, values_list)
-        >>> _VideoTagger("/path/to/temp17.mp4", "/path/to/18 Output.mp4", metadata=subler_dict).tag(remove_input=True)
+        Raises
+        ------
+        ValueError
+            Raised if the input file path points to a file that does not exist
+            or is inaccessible to the computer.
+        TypeError
+            Raised if the input file path does not have a `.mp4` extension.
         """
+        self.file_path = _File(file_path, 'mp4')
+        self.terminal_file_path = EscapedString(file_path)
+        self.converter_options = self._set_converter_options()
 
-        self.subler_cli = _path_to_system_executable("anc/SublerCLI")
-        self.source = _EscapedString(source_filepath)
-        self.destination = _EscapedString(destination_filepath)
-        self._check_if_input_and_output_match()
-        _ValidateDirectory(self.destination.original)
-        self.metadata = metadata
+    def _set_converter_options(self):
+        file_extension = Path(self.file_path).suffix
+        destination = self.file_path.replace(file_extension,
+                                             '_converted' + file_extension)
+        converter_options = VideoConversionOptions(self.file_path, destination)
+        return converter_options
+
+    def convert(self):
+        """
+        Convert the video using the parameters in the `converter_options`
+        attribute.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.convert()
+
+    def test_convert(self):
+        """
+        Run a test video conversion using 10 seconds at high speed.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.test()
+
+    def tag(self, metadata_dictionary: dict):
+        """
+        Tag the video with the keys and values in the provided dictionary.
+
+        Parameters
+        ----------
+        metadata_dictionary
+            The metadata tags and values.
+        """
+        temporary_filepath = make_temporary_video(self.file_path)
+        metadata = format_subler_metadata_from_dictionary(metadata_dictionary)
+        options = [path_to_subler_cli(),
+                   f"-source {temporary_filepath}",
+                   f"-dest {EscapedString(self.file_path)}",
+                   f"-metadata {metadata}",
+                   f"-language English"]
+        os.system(construct_terminal_commands(options))
+        os.remove(temporary_filepath.original)
+
+
+class MKV:
+    """
+    Instances of this class represent an MKV file which is accessible to
+    the computer.
+    """
+
+    def __init__(self, file_path: str):
+        """
+        Parameters
+        ----------
+        file_path
+            The absolute path to an MKV file.
+
+        Raises
+        ------
+        ValueError
+            Raised if the input file path points to a file that does not exist
+            or is inaccessible to the computer.
+        TypeError
+            Raised if the input file path does not have a `.mkv` extension.
+        """
+        self.file_path = _File(file_path, 'mkv')
+        self.terminal_file_path = EscapedString(file_path)
+        self.converter_options = self._set_converter_options()
+
+    def _set_converter_options(self):
+        file_extension = Path(self.file_path).suffix
+        destination = self.file_path.replace(file_extension, '_converted.mp4')
+        converter_options = VideoConversionOptions(self.file_path, destination)
+        return converter_options
+
+    def convert(self):
+        """
+        Convert the video using the parameters in the `converter_options`
+        attribute.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.convert()
+
+    def test_convert(self):
+        """
+        Run a test video conversion using 10 seconds at high speed.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.test()
+
+
+class ISO:
+    """
+    Instances of this class represent a Blu-ray or DVD disc image in ISO
+    format.
+    """
+
+    def __init__(self, file_path: str):
+        """
+        Parameters
+        ----------
+        file_path
+            The absolute path to an ISO file on this computer.
+
+        Raises
+        ------
+        ValueError
+            Raised if the input file path points to a file that does not exist
+            or is inaccessible to the computer.
+        TypeError
+            Raised if the input file path does not have a `.iso` extension.
+        """
+        self.file_path = _File(file_path, 'iso')
+        self.terminal_file_path = EscapedString(file_path)
+        self.converter_options = self._set_converter_options()
+
+    def _set_converter_options(self):
+        file_extension = Path(self.file_path).suffix
+        destination = self.file_path.replace(file_extension,
+                                             ', Title 1 (Converted).mp4')
+        converter_options = VideoConversionOptions(self.file_path, destination)
+        return converter_options
+
+    def convert(self):
+        """
+        Convert the video using the parameters in the `converter_options`
+        attribute.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.convert()
+
+    def test_convert(self):
+        """
+        Run a test video conversion using 10 seconds at high speed.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.test()
+
+
+class Spreadsheet:
+    """
+    This class provides the ability to process and tag items from a
+    spreadsheet.
+    """
+
+    def __init__(self, path_to_spreadsheet: str):
+        """
+        Parameters
+        ----------
+        path_to_spreadsheet
+            The absolute path to the spreadsheet. To make a blank spreadsheet,
+            use the function `make_empty_metadata_spreadsheet()`.
+        """
+        self.spreadsheet = SpreadsheetLoader(path_to_spreadsheet)
 
     @staticmethod
-    def _format_metadata(metadata: dict) -> str:
-        return ''.join([r'{"%s":"%s"}' % (i, j) for i, j in metadata.items()])
+    def _get_source_type(source_filepath: str):
+        extension = os.path.splitext(source_filepath)[1]
+        if extension == ".mp4":
+            return MP4(source_filepath)
+        elif extension == ".mkv":
+            return MKV(source_filepath)
+        elif extension == ".iso":
+            return ISO(source_filepath)
+        else:
+            raise Exception('Bad input file type.')
 
-    def _check_if_input_and_output_match(self):
-        if self.source.original == self.destination.original:
-            raise Exception('Input and output files cannot be the same! Either change the output directory or give the '
-                            'input file a temporary filename.')
+    def _set_source_parameters(self, item: int):
+        handbrake_metadata = self.spreadsheet.make_handbrake_dictionary(item)
+        video = self._get_source_type(handbrake_metadata["Source"])
+        video.converter_options.source.title = handbrake_metadata["Title"]
+        video.converter_options.source.quality = handbrake_metadata["Quality Factor"]
+        video.converter_options.destination.output = handbrake_metadata["Destination"]
+        try:
+            video.converter_options.destination.markers = handbrake_metadata["Chapters"]
+        except KeyError:
+            pass
+        video.converter_options.audio.audio_titles = handbrake_metadata["Audio"]
+        video.converter_options.audio.bitrates = handbrake_metadata["Audio Bitrate"]
+        video.converter_options.audio.mixdowns = handbrake_metadata["Audio Mixdown"]
+        video.converter_options.audio.track_names = handbrake_metadata["Audio Track Names"]
+        video.converter_options.picture.width = handbrake_metadata["Dimensions"].split("x")[0]
+        video.converter_options.picture.height = handbrake_metadata["Dimensions"].split("x")[1]
+        video.converter_options.picture.crop = handbrake_metadata["Crop"]
+        return video
 
-    def tag(self, remove_input=False):
-        options = [self.subler_cli,
-                   f"-source {self.source}",
-                   f"-dest {self.destination}",
-                   f"-metadata {self._format_metadata(self.metadata)}",
-                   f"-language English"]
-        os.system(_construct_terminal_commands(options))
+    def _parallel_convert(self, item):
+        video = self._set_source_parameters(item)
+        video.convert()
 
-        if remove_input:
-            os.remove(self.source.original)
+    def _test_parallel_convert(self, item):
+        video = self._set_source_parameters(item)
+        video.test_convert()
+
+    def _parallel_tag(self, item):
+        handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+        metadata_dictionary = self.spreadsheet.make_subler_dictionary(item)
+        MP4(handbrake_dictionary["Destination"]).tag(metadata_dictionary)
+
+    def _parallel_convert_and_tag(self, item):
+        video = self._set_source_parameters(item)
+        video.convert()
+        handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+        metadata_dictionary = self.spreadsheet.make_subler_dictionary(item)
+        MP4(handbrake_dictionary["Destination"]).tag(metadata_dictionary)
+
+    def _test_parallel_convert_and_tag(self, item):
+        video = self._set_source_parameters(item)
+        video.test_convert()
+        handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+        metadata_dictionary = self.spreadsheet.make_subler_dictionary(item)
+        MP4(handbrake_dictionary["Destination"]).tag(metadata_dictionary)
+
+    def serial_convert_only(self):
+        """
+        Convert the source to destination using the Handbrake parameters for
+        each item. This converts the items one at a time using as many cores as
+        your computer decides to allocate. I find serial conversion is better
+        for a set of high-definition videos, while parallel conversion is
+        better for a set of standard-definition videos.
+        """
+        for item in range(self.spreadsheet.n_items):
+            video = self._set_source_parameters(item)
+            video.convert()
+
+    def parallel_convert_only(self):
+        """
+        Convert the source to destination using the Handbrake parameters for
+        each item. This converts multiple items at once using as many cores as
+        your computer decides to allocate. I find parallel conversion is
+        better for a set of standard-definition videos, while serial conversion
+        is better for a set of high-definition videos.
+        """
+        pool = get_multiprocessing_pool()
+        for item in range(self.spreadsheet.n_items):
+            pool.apply_async(self._parallel_convert, args=(item,))
+        cleanup_parallel_processing(pool)
+
+    def test_convert_only(self):
+        """
+        Test conversion of a spreadsheet. This is done using parallel
+        processing.
+        """
+        pool = get_multiprocessing_pool()
+        for item in range(self.spreadsheet.n_items):
+            pool.apply_async(self._test_parallel_convert, args=(item,))
+        cleanup_parallel_processing(pool)
+
+    def tag_only(self):
+        """
+        Assuming all source items are MP4 files which only need tagging, tag
+        them in parallel using the Subler parameters for each item. This uses
+        the "Destination" parameter as the source and destination file.
+        """
+        pool = get_multiprocessing_pool()
+        for item in range(self.spreadsheet.n_items):
+            pool.apply_async(self._parallel_tag, args=(item,))
+        cleanup_parallel_processing(pool)
+
+    def serial_convert_and_tag(self):
+        """
+        Convert the source to destination using the Handbrake parameters then
+        tag with Subler parameters for each item. This converts the items one
+        at a time using as many cores as your computer decides to allocate. I
+        find serial conversion is better for a set of high-definition videos,
+        while parallel conversion is better for a set of standard-definition
+        videos.
+        """
+        for item in range(self.spreadsheet.n_items):
+            handbrake_dictionary = self.spreadsheet.make_handbrake_dictionary(item)
+            subler_dictionary = self.spreadsheet.make_subler_dictionary(item)
+            video = self._set_source_parameters(item)
+            video.convert()
+            MP4(handbrake_dictionary["Destination"]).tag(subler_dictionary)
+
+    def parallel_convert_and_tag(self):
+        """
+        Convert the source to destination using the Handbrake parameters then
+        tag with Subler parameters for each item. This converts multiple items
+        at once using as many cores as your computer decides to allocate. I
+        find serial conversion is better for a set of high-definition videos,
+        while parallel conversion is better for a set of standard-definition
+        videos.
+        """
+        pool = get_multiprocessing_pool()
+        for item in range(self.spreadsheet.n_items):
+            pool.apply_async(self._parallel_convert_and_tag, args=(item,))
+        cleanup_parallel_processing(pool)
+
+    def test_convert_and_tag(self):
+        """
+        Test conversion and tagging of a spreadsheet. This is done using
+        parallel processing.
+        """
+        pool = get_multiprocessing_pool()
+        for item in range(self.spreadsheet.n_items):
+            pool.apply_async(self._test_parallel_convert_and_tag, args=(item,))
+        cleanup_parallel_processing(pool)
 
 
-def empty_metadata_spreadsheet(save_directory: str, kind: str):
+def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
 
     """
     This function saves an empty Microsoft Excel metadata spreadsheet for you to fill in. Note that not all fields need
@@ -369,12 +422,12 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
     --------
     For a TV spreadsheet:
 
-    >>> empty_metadata_spreadsheet("/path/to/directory", kind='TV')
+    >>> make_empty_metadata_spreadsheet("/path/to/directory", kind='TV')
     Empty spreadsheet saved to "/path/to/directory/empty_metadata_tv.xlsx."
 
     For a movie spreadsheet:
 
-    >>> empty_metadata_spreadsheet("/path/to/directory", kind='movie')
+    >>> make_empty_metadata_spreadsheet("/path/to/directory", kind='movie')
     Empty spreadsheet saved to "/path/to/directory/empty_metadata_movie.xlsx."
 
     Notes
@@ -406,13 +459,13 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
        country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()
        function to see what the correct format is.
 
-          - us-tv|TV-Y|100|
-          - us-tv|TV-Y7|200|
-          - us-tv|TV-G|300|
-          - us-tv|TV-PG|400|
-          - us-tv|TV-14|500|
-          - us-tv|TV-MA|600|
-          - us-tv|Unrated|???|
+       - us-tv|TV-Y|100|
+       - us-tv|TV-Y7|200|
+       - us-tv|TV-G|300|
+       - us-tv|TV-PG|400|
+       - us-tv|TV-14|500|
+       - us-tv|TV-MA|600|
+       - us-tv|Unrated|???|
 
      - **Cast:** The names of the main cast members, separated by commas (for names with commas, surround with quotation
        marks like, e.g., Patrick Stewart, "Patrick Stewart, Jr."
@@ -428,22 +481,22 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
      - **Audio Bitrate:** The bitrates for each of the audio titles, using 64-bits per channel. This means 64 for mono,
        128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.
      - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.
-     - **Audio Notes:** What to name the audio tracks, like "Mono Audio", "Stereo Audio", "5.1 Surround Sound",
-       "7.1 Surround Sound", or "Commentary with XXX and XXX". If the name has commas in it, it will need to be in
-       quotation marks.
+     - **Audio Track Names:** What to name the audio tracks, like "Mono Audio", "Stereo Audio", "5.1 Surround Sound",
+       "7.1 Surround Sound", or "Commentary with XXX and XXX". **NOTE:** These will need to be encapsulated by quotation marks,
+       e.g., "Stereo Audio","Director's Commentary". Take care if the label has apostrophes or double quotes.
      - **HD Video:** Video definition flag.
 
-         - "0" = SD
-         - "1" = 720p HD
-         - "2" = 1080p HD
-         - "3" = 4K UHD
+       - "0" for 480p/576p Standard Definition
+       - "1" for 720p High Definition
+       - "2" for 1080p Full High Definition
+       - "3" for 2160p 4K Ultra High Definition
 
      - **Quality Factor:** Handbrake quality factor.
 
-          - 20±2 for 480p/576p Standard Definition
-          - 21±2 for 720p High Definition
-          - 22±2 for 1080p Full High Definition
-          - 25±2 for 2160p 4K Ultra High Definition
+       - 20±2 for 480p/576p Standard Definition
+       - 21±2 for 720p High Definition
+       - 22±2 for 1080p Full High Definition
+       - 25±2 for 2160p 4K Ultra High Definition
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
@@ -464,13 +517,13 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
        country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()
        function to see what the correct format is.
 
-          - mpaa|NR|000|
-          - mpaa|G|100|
-          - mpaa|PG|200|
-          - mpaa|PG-13|300|
-          - mpaa|R|400|
-          - mpaa|NC-17|500|
-          - mpaa|Unrated|???|
+       - mpaa|NR|000|
+       - mpaa|G|100|
+       - mpaa|PG|200|
+       - mpaa|PG-13|300|
+       - mpaa|R|400|
+       - mpaa|NC-17|500|
+       - mpaa|Unrated|???|
 
      - **Rating Annotation:** any reasons listed for the given rating, e.g., "violence and sexual content."
      - **Cast:** The names of the main cast members, separated by commas (for names with commas, surround with quotation
@@ -490,23 +543,22 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
      - **Audio Bitrate:** The bitrates for each of the audio titles, using 64-bits per channel. This means 64 for mono,
        128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.
      - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.
-     - **Audio Notes:** What to name the audio tracks, like "Mono Audio", "Stereo Audio", "5.1 Surround Sound",
-       "7.1 Surround Sound", or "Commentary with XXX and XXX". If the name has commas in it, it will need to be in
-       quotation marks. If it has quotation marks it might break entirely. Best to check in advance or be sure to use
-       single quotes.
+     - **Audio Track Names:** What to name the audio tracks, like "Mono Audio", "Stereo Audio", "5.1 Surround Sound",
+       "7.1 Surround Sound", or "Commentary with XXX and XXX". **NOTE:** These will need to be encapsulated by quotation marks,
+       e.g., "Stereo Audio","Director's Commentary". Take care if the label has apostrophes or double quotes.
      - **HD Video:** Video definition flag.
 
-          - "0" = SD
-          - "1" = 720p HD
-          - "2" = 1080p HD
-          - "3" = 4K UHD
+       - "0" for 480p/576p Standard Definition
+       - "1" for 720p High Definition
+       - "2" for 1080p Full High Definition
+       - "3" for 2160p 4K Ultra High Definition
 
      - **Quality Factor:** Handbrake quality factor.
 
-          - 20±2 for 480p/576p Standard Definition
-          - 21±2 for 720p High Definition
-          - 22±2 for 1080p Full High Definition
-          - 25±2 for 2160p 4K Ultra High Definition
+       - 20±2 for 480p/576p Standard Definition
+       - 21±2 for 720p High Definition
+       - 22±2 for 1080p Full High Definition
+       - 25±2 for 2160p 4K Ultra High Definition
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
@@ -514,202 +566,12 @@ def empty_metadata_spreadsheet(save_directory: str, kind: str):
        might be "3,The Third Chapter".
     """
 
-    tv_columns = ['Name',
-                  'Artist',
-                  'Album Artist',
-                  'Album',
-                  'Genre',
-                  'Release Date',
-                  'Track #',
-                  'TV Show',
-                  'TV Episode ID',
-                  'TV Season',
-                  'TV Episode #',
-                  'TV Network',
-                  'Description',
-                  'Series Description',
-                  'Copyright',
-                  'Media Kind',
-                  'Cover Art',
-                  'Rating',
-                  'Cast',
-                  'Source',
-                  'Destination',
-                  'Title',
-                  'Audio',
-                  'Dimensions',
-                  'Crop',
-                  'Audio Bitrate',
-                  'Audio Mixdown',
-                  'Audio Notes',
-                  'HD Video',
-                  'Quality Factor',
-                  'Subtitle',
-                  'Chapters']
-
-    movie_columns = ['Name',
-                     'Genre',
-                     'Release Date',
-                     'Description',
-                     'Copyright',
-                     'Media Kind',
-                     'Cover Art',
-                     'Rating',
-                     'Rating Annotation',
-                     'Cast',
-                     'Director',
-                     'Producers',
-                     'Screenwriters',
-                     'Source',
-                     'Destination',
-                     'Title',
-                     'Audio',
-                     'Dimensions',
-                     'Crop',
-                     'Audio Bitrate',
-                     'Audio Mixdown',
-                     'Audio Notes',
-                     'HD Video',
-                     'Quality Factor',
-                     'Subtitle',
-                     'Chapters']
-
-    kind = kind.lower()
-    if (kind == 'tv') or (kind == 'television'):
-        kind = 'tv'
-        columns = tv_columns
-    elif (kind == 'movie') or (kind == 'film'):
-        kind = 'movie'
-        columns = movie_columns
-    else:
-        raise Exception('Unrecognized kind.')
-
-    note = ['Make sure you change all cells to "Text" to avoid any Excel automated formatting shit.']
-    note.extend(['']*(len(columns)-1))
-    df = pd.DataFrame([note], columns=columns)
+    kind, columns = _columns_for_kind(kind)
     save_path = os.path.join(save_directory, f"empty_metadata_{kind}.xlsx")
-    df.to_excel(save_path, index=False)
+    _make_dataframe_from_columns(columns).to_excel(save_path, index=False)
+
     print(f"Empty spreadsheet saved to \"{save_path}\".")
 
 
-def _convert_and_tag_spreadsheet_item(iterator: int, dataframe: pd.DataFrame, output_directory: str, test: bool):
-
-    """
-    This function actually processes an item from a spreadsheet. It's designed to be called by multiprocessing, but can
-    be called in serial, too.
-
-    Parameters
-    ----------
-    iterator
-        The looping iterator.
-    dataframe
-        The loaded metadata spreadsheet.
-    output_directory
-        The directory where the files are to be saved.
-    test
-        Whether or not to do a quick test run to check file tagging and output paths.
-    """
-
-    # get the line from the metadata
-    row = dataframe.data.iloc[iterator].dropna().to_dict()
-    keys = row.keys()
-    values = row.values()
-
-    # location for temporary file
-    temporary_file = _EscapedString(os.path.join(output_directory, f"temp{iterator}.mp4"))
-
-    # extract metadata to dictionaries
-    handbrake_metadata, subler_metadata = _create_metadata_dictionaries(keys, values)
-
-    # setup a VideoConverter instance and set parameters
-    converter = VideoConverter(handbrake_metadata["Source"], temporary_file.original)
-    converter.source_options.title = handbrake_metadata["Title"]
-    converter.video_options.quality = handbrake_metadata["Quality Factor"]
-    converter.audio_options.audio_titles = handbrake_metadata["Audio"]
-    converter.audio_options.bitrates = handbrake_metadata["Audio Bitrate"]
-    converter.audio_options.mixdowns = handbrake_metadata["Audio Mixdown"]
-    converter.audio_options.names = handbrake_metadata["Audio Notes"]
-    converter.picture_options.width = handbrake_metadata["Dimensions"].split("x")[0]
-    converter.picture_options.height = handbrake_metadata["Dimensions"].split("x")[1]
-    converter.picture_options.crop = handbrake_metadata["Crop"]
-
-    # convert the video
-    converter.convert(test=test)
-
-    # tag temporary video
-    output_file = os.path.join(output_directory, handbrake_metadata["Filename"])
-    _VideoTagger(temporary_file.original, output_file, metadata=subler_metadata).tag(remove_input=True)
-
-
-def _get_appropriate_number_of_cores():
-    n_cores = int(mp.cpu_count() / 2) - 2
-    if n_cores < 1:
-        n_cores = 1
-    return n_cores
-
-
-def _set_processor_pool(n_cores):
-    """
-    mp.get_context('fork') allows parallel processing without 'if __name__ == '__main__'.
-    """
-    return mp.get_context('fork').Pool(n_cores)
-
-
-def _asynchronous_process_spreadsheet(pool, dataframe, output_directory, test):
-    for i in range(len(dataframe.data)):
-        args = (i, dataframe, output_directory, test)
-        pool.apply_async(_convert_and_tag_spreadsheet_item, args=args)
-
-
-def _cleanup_parallel_processing(pool):
-    """
-    No one knows what these do...but things don't work without them.
-    """
-    pool.close()
-    pool.join()
-
-
-def process_spreadsheet(path_to_spreadsheet: str, output_directory: str, parallel: bool = True, test: bool = False):
-
-    """
-    Convert and tag a metadata spreadsheet using either parallel or serial (non-parallel) processing.
-
-    **Parallel processing:**
-    This will process multiple videos simultaneously, one per core. For some reason my 6-core computer comes back
-    with 12 cores available, so I've set this to use half the apparently available cores minus 2. For my 2019 MacBook Pro
-    with a 6-core i7 processor, this assigns (12/2 - 2) = 4 cores to parallel processing. The two additional cores allows
-    for you to continue to work on other things that aren't processor-heavy.
-
-    **Serial processing:**
-    This will use multiple cores automatically assigned by your system but will process a single line in the spreadsheet
-    at a time. This will be faster for a single video file since Handbrake scales well up to 4-6 cores, but for an
-    larger set of videos you're probably better off processing in parallel.
-
-    Parameters
-    ----------
-    path_to_spreadsheet
-        Absolute path to the spreadsheet.
-    output_directory
-        Output directory where you want the final tagged videos.
-    parallel
-        Whether or not to process in parallel.
-    test
-        Whether or not to do a test run, converting from 00:00:03 to 00:00:06 at low-resolution and very fast speed in
-        order to test that all the outputs are tagged correctly and go where you expect them to. Useful to run before
-        initiating a long full-spreadsheet process.
-
-    Examples
-    --------
-    >>> process_spreadsheet('/path/to/metadata.xlsx', '/path/to/output_directory',
-    ...                     parallel=True, test=False)
-    """
-
-    dataframe = MetadataLoader(path_to_spreadsheet)
-    if parallel:
-        n_cores = _get_appropriate_number_of_cores()
-        pool = _set_processor_pool(n_cores)
-        _asynchronous_process_spreadsheet(pool, dataframe, output_directory, test)
-        _cleanup_parallel_processing(pool)
-    else:
-        for i in range(len(dataframe.data)):
-            _convert_and_tag_spreadsheet_item(i, dataframe, output_directory, test)
+if __name__ == "__main__":
+    Spreadsheet('/Volumes/Media HD/Disc Images/Frasier/metadata.xlsx').test_convert_and_tag()

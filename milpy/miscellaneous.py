@@ -1,6 +1,7 @@
 import os
 
-class _ValidatePath(str):
+
+class ValidatePath(str):
 
     """
     This class ensures that an provided file exists.
@@ -16,7 +17,7 @@ class _ValidatePath(str):
             raise ValueError("The input file doesn't exist.")
 
 
-class _ValidateDirectory(str):
+class ValidateDirectory(str):
 
     """
     This class ensures that the a provided directory exists. If it doesn't, it creates the directory.
@@ -30,10 +31,10 @@ class _ValidateDirectory(str):
     def _create_directory_if_it_does_not_exist(path: str):
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
-            os.mkdir(directory)
+            os.makedirs(directory)
 
 
-class _EscapedString(str):
+class EscapedString(str):
     r"""Create a string with backslashes before special characters.
 
     This class will place a backslash before any of the following characters:
@@ -49,7 +50,7 @@ class _EscapedString(str):
     --------
     Make the string of a movie into its terminal representation
 
-    >>> print(_EscapedString('/path/to/file with ?$:"'))
+    >>> print(EscapedString('/path/to/file with ?$:"'))
     /path/to/file\ with\ \?\$\:\"
 
     """
@@ -62,7 +63,7 @@ class _EscapedString(str):
 
     @staticmethod
     def _add_backslashes_before_special_characters(string: str) -> str:
-        special_characters = '\|&:;()<>~*@?!$#"` ' + "'"
+        special_characters = '|&:;()<>~*@?!$#"` ' + "'"
         for i in special_characters:
             string = string.replace(i, rf'\{i}')
         return string

@@ -1,9 +1,9 @@
-from typing import Iterable
-from milpy.miscellaneous import _EscapedString, _ValidatePath, _ValidateDirectory
+from milpy.miscellaneous import EscapedString, ValidatePath, ValidateDirectory
+from milpy.terminal_interface import construct_terminal_commands, path_to_system_executable
 
 
-def _construct_terminal_commands(command_line_arguments: Iterable[str]) -> str:
-    return ' '.join(command_line_arguments)
+def path_to_handbrake_cli():
+    return path_to_system_executable("video/anc/HandBrakeCLI")
 
 
 class SourceOptions:
@@ -26,8 +26,8 @@ class SourceOptions:
             The video title to convert.
         """
 
-        self._input = _EscapedString(input_file)
-        _ValidatePath(self._input.original)
+        self._input = EscapedString(input_file)
+        ValidatePath(self._input.original)
         self.title = title
 
     def __str__(self):
@@ -45,8 +45,9 @@ class SourceOptions:
         """
 
         options = [f"--input={self._input}",
-                   f"--title={self.title}"]
-        return _construct_terminal_commands(options)
+                   f"--title={self.title}",
+                   f"--previews=1:0"]
+        return construct_terminal_commands(options)
 
     @property
     def input(self):
@@ -54,8 +55,8 @@ class SourceOptions:
 
     @input.setter
     def input(self, value):
-        self._input = _EscapedString(value)
-        _ValidatePath(self._input.original)
+        self._input = EscapedString(value)
+        ValidatePath(self._input.original)
 
 
 class DestinationOptions:
@@ -85,8 +86,8 @@ class DestinationOptions:
             exactly the same time.
         """
 
-        self._output = _EscapedString(output)
-        _ValidateDirectory(self._output.original)
+        self._output = EscapedString(output)
+        ValidateDirectory(self._output.original)
         self.format = video_format
         self.markers = markers
         self.optimize = optimize
@@ -97,7 +98,7 @@ class DestinationOptions:
                f"   Output: {self._output.original}\n"\
                f"   Video format: {self.format}\n"\
                f"   Markers: {self.markers}\n"\
-               f"   Optimize: {self.markers}\n"\
+               f"   Optimize: {self.optimize}\n"\
                f"   Align A/V: {self.align_av}"
 
     def __repr__(self):
@@ -113,14 +114,14 @@ class DestinationOptions:
                    f"--format={self.format}",
                    ]
         if self.markers:
-            options.append(f"--markers")
+            options.append(f"--markers={self.markers}")
         else:
             options.append(f"--no-markers")
         if self.optimize:
             options.append(f"--optimize")
         if self.align_av:
             options.append(f"--align-av")
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
     @property
     def output(self):
@@ -128,8 +129,8 @@ class DestinationOptions:
 
     @output.setter
     def output(self, value):
-        self._output = _EscapedString(value)
-        _ValidateDirectory(self._output.original)
+        self._output = EscapedString(value)
+        ValidateDirectory(self._output.original)
 
 
 class VideoOptions:
@@ -183,7 +184,7 @@ class VideoOptions:
             options.append("--two-pass")
             options.append("--turbo")
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
 
 class AudioOptions:
@@ -195,7 +196,7 @@ class AudioOptions:
     https://handbrake.fr/docs/en/latest/cli/command-line-reference.html
     """
 
-    def __init__(self, audio_titles="1", encoder="ca_aac", bitrates=None, mixdowns=None, sample_rates=None, names='None'):
+    def __init__(self, audio_titles="1", encoder="ca_aac", bitrates=None, mixdowns=None, sample_rates=None, track_names='None'):
 
         """
         Parameters
@@ -214,9 +215,9 @@ class AudioOptions:
         sample_rates
             Sample rate in kHz. A good choice is probably 48 if you want to manually define it, otherwise it will
             automatically determine an appropriate rate.
-        names
-            The audio track names, separated by a comma. For the example above, this might be 5.1 Surround Sound,"Commentary by Director
-            XXX XXX, Producer YYY YYY and Screenwriter ZZZ ZZZ".
+        track_names
+            The audio track names, separated by a comma. **NOTE:** These will need to be encapsulated by quotation marks,
+            e.g., "Stereo Audio","Director's Commentary". Take care if the label has apostrophes or double quotes.
         """
 
         self.audio_titles = audio_titles
@@ -224,7 +225,7 @@ class AudioOptions:
         self.bitrates = bitrates
         self.mixdowns = mixdowns
         self.sample_rates = sample_rates
-        self._names = _EscapedString(names)
+        self.track_names = track_names
 
     def __str__(self):
         print_string = f"Audio options:\n"\
@@ -233,19 +234,11 @@ class AudioOptions:
                        f"   Bitrate(s) (kbps): {self.bitrates}\n"\
                        f"   Mixdown(s): {self.mixdowns}\n"\
                        f"   Sample rate(s) (kHz): {self.sample_rates}\n"\
-                       f"   Track name(s): {self.names.original}"
+                       f"   Track name(s): {self.track_names}"
         return print_string.replace('None', 'Same as source')
 
     def __repr__(self):
         return self.construct_terminal_commands()
-
-    @property
-    def names(self):
-        return self._names
-
-    @names.setter
-    def names(self, value):
-        self._names = _EscapedString(value)
 
     def construct_terminal_commands(self):
 
@@ -257,10 +250,10 @@ class AudioOptions:
             options.append(f"--mixdown={self.mixdowns}")
         if self.sample_rates is not None:
             options.append(f"--arate={self.sample_rates}")
-        if self.names != 'None':
-            options.append(f'--aname={self.names}')
+        if self.track_names != 'None':
+            options.append(f'--aname={self.track_names}')
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
 
 class PictureOptions:
@@ -314,7 +307,7 @@ class PictureOptions:
         if self.height is not None:
             options.append(f"--height={self.height}")
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
 
 
 class SubtitleOptions:
@@ -356,4 +349,66 @@ class SubtitleOptions:
             options.append(f"--subtitle={self.subtitles}")
             options.append("--subtitle-burned")
 
-        return _construct_terminal_commands(options)
+        return construct_terminal_commands(options)
+
+
+class VideoConversionOptions:
+    """Instances of this class hold all options and ensure they're valid.
+
+    Raises
+    ------
+    TypeError
+        Raised if the inputs are not of the proper options.
+
+    """
+    def __init__(self, source, destination):
+        self.source = SourceOptions(source)
+        self.destination = DestinationOptions(destination)
+        self.video = VideoOptions()
+        self.audio = AudioOptions()
+        self.picture = PictureOptions()
+        self.subtitle = SubtitleOptions()
+
+        self._raise_type_error_if_inputs_are_not_proper_type()
+        self._raise_exception_if_input_and_output_filenames_match()
+
+    def _raise_type_error_if_inputs_are_not_proper_type(self):
+        self._raise_type_error_if_not_correct_option_type(
+            self.source, 'source', SourceOptions)
+        self._raise_type_error_if_not_correct_option_type(
+            self.destination, 'destination', DestinationOptions)
+        self._raise_type_error_if_not_correct_option_type(
+            self.video, 'video', VideoOptions)
+        self._raise_type_error_if_not_correct_option_type(
+            self.audio, 'audio', AudioOptions)
+        self._raise_type_error_if_not_correct_option_type(
+            self.picture, 'picture', PictureOptions)
+        self._raise_type_error_if_not_correct_option_type(
+            self.subtitle, 'subtitle', SubtitleOptions)
+
+    @staticmethod
+    def _raise_type_error_if_not_correct_option_type(
+            input_options, option_name: str, option_type):
+        if not isinstance(input_options, option_type):
+            message = f'{option_name} must be an instance of {option_type}, ' \
+                      f'not {type(input_options)}.'
+            raise TypeError(message)
+
+    def __str__(self):
+        header = 'Video converter settings:'
+        delimiter = '-' * (len(header) - 2)
+        return f'{header}\n' \
+               f'{delimiter}\n' \
+               f'{self.source}\n' \
+               f'{self.destination}\n' \
+               f'{self.video}\n' \
+               f'{self.audio}\n' \
+               f'{self.picture}\n' \
+               f'{self.subtitle}'
+
+    def _raise_exception_if_input_and_output_filenames_match(self):
+        if self.source.input.original == self.destination.output.original:
+            message = 'Input and output files cannot be the same! Either ' \
+                      'change the output directory or give the input file a ' \
+                      'temporary filename.'
+            raise Exception(message)
