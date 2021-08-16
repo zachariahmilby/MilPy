@@ -9,13 +9,11 @@ from milpy.video._subler import path_to_subler_cli, \
 from milpy.terminal_interface import construct_terminal_commands
 from milpy.parallel_processing import get_multiprocessing_pool, \
     cleanup_parallel_processing
+import subprocess
 
 
-# TODO: Find a way to determine the number of chapters in a source/title, then
-#  if there are more than 1, include "--markers" in Handbrake command. If 0 or
-#  1 chapters, then include "--no-markers". Finally, only do these if a
-#  spreadsheet entry for "Chapters" does not include the path to a CSV with
-#  chapter information, in which case it should be "--markers=/path/to/csv.csv"
+# TODO: Figure out why double quotes won't appear in HandbrakeCLI audio track
+#  names.
 
 
 class _VideoConverter:
@@ -162,6 +160,21 @@ class MP4:
         os.system(construct_terminal_commands(options))
         os.remove(temporary_filepath.original)
 
+    def get_number_of_chapters(self):
+        cmd = f"{path_to_handbrake_cli()} --input={self.terminal_file_path} " \
+              f"--title={self.converter_options.source.title} --scan"
+        cp = subprocess.Popen(cmd, stderr=subprocess.PIPE,
+                              stdout=subprocess.PIPE, shell=True)
+        chapters = [line.decode("utf-8").replace('\n', '').strip()
+                    for line in cp.stderr.readlines()
+                    if ": duration " in line.decode("utf-8")
+                    and '00:00:01' not in line.decode("utf-8")]
+        number_of_chapters = len(chapters)
+        cp.stderr.close()
+        cp.stdout.close()
+        cp.wait()
+        return str(number_of_chapters)
+
 
 class MKV:
     """
@@ -208,6 +221,21 @@ class MKV:
         """
         converter = _VideoConverter(self.converter_options)
         converter.test()
+
+    def get_number_of_chapters(self):
+        cmd = f"{path_to_handbrake_cli()} --input={self.terminal_file_path} " \
+              f"--title={self.converter_options.source.title} --scan"
+        cp = subprocess.Popen(cmd, stderr=subprocess.PIPE,
+                              stdout=subprocess.PIPE, shell=True)
+        chapters = [line.decode("utf-8").replace('\n', '').strip()
+                    for line in cp.stderr.readlines()
+                    if ": duration " in line.decode("utf-8")
+                    and '00:00:01' not in line.decode("utf-8")]
+        number_of_chapters = len(chapters)
+        cp.stderr.close()
+        cp.stdout.close()
+        cp.wait()
+        return str(number_of_chapters)
 
 
 class ISO:
@@ -257,6 +285,21 @@ class ISO:
         converter = _VideoConverter(self.converter_options)
         converter.test()
 
+    def get_number_of_chapters(self):
+        cmd = f"{path_to_handbrake_cli()} --input={self.terminal_file_path} " \
+              f"--title={self.converter_options.source.title} --scan"
+        cp = subprocess.Popen(cmd, stderr=subprocess.PIPE,
+                              stdout=subprocess.PIPE, shell=True)
+        chapters = [line.decode("utf-8").replace('\n', '') for line in
+                    cp.stderr.readlines() if "    + " in line.decode("utf-8")
+                    and ": duration " in line.decode("utf-8")
+                    and '00:00:01' not in line.decode("utf-8")]
+        number_of_chapters = len(chapters)
+        cp.stderr.close()
+        cp.stdout.close()
+        cp.wait()
+        return str(number_of_chapters)
+
 
 class Spreadsheet:
     """
@@ -292,10 +335,10 @@ class Spreadsheet:
         video.converter_options.source.title = handbrake_metadata["Title"]
         video.converter_options.source.quality = handbrake_metadata["Quality Factor"]
         video.converter_options.destination.output = handbrake_metadata["Destination"]
-        try:
-            video.converter_options.destination.markers = handbrake_metadata["Chapters"]
-        except KeyError:
-            pass
+        if "Chapters" in handbrake_metadata:
+            video.converter_options.destination.chapters = EscapedString(handbrake_metadata["Chapters"])
+        else:
+            video.converter_options.destination.chapters = video.get_number_of_chapters()
         video.converter_options.audio.audio_titles = handbrake_metadata["Audio"]
         video.converter_options.audio.bitrates = handbrake_metadata["Audio Bitrate"]
         video.converter_options.audio.mixdowns = handbrake_metadata["Audio Mixdown"]
@@ -514,8 +557,12 @@ def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
-       those names. The format should be "#,name# for each chapter in the video. For instance, the third line in the CSV
-       might be "3,The Third Chapter".
+       those names. You will want these in escaped format, so for instance:
+
+       | ``1,The\ First\ Chapter\,\ with\ comma``
+       | ``2,The\ Second\ Chapter\,\ with\ comma``
+
+       Otherwise, as long as there are more a single chapter, it will automatically include them.
 
     Movies:
      - **Name:** The name of the movie.
@@ -576,8 +623,12 @@ def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
 
      - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.
      - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing
-       those names. The format should be "#,name# for each chapter in the video. For instance, the third line in the CSV
-       might be "3,The Third Chapter".
+       those names. You will want these in escaped format, so for instance:
+
+       | ``1,The\ First\ Chapter\,\ with\ comma``
+       | ``2,The\ Second\ Chapter\,\ with\ comma``
+
+       Otherwise, as long as there are more a single chapter, it will automatically include them.
     """
 
     kind, columns = _columns_for_kind(kind)

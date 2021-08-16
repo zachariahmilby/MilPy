@@ -68,17 +68,18 @@ class DestinationOptions:
     https://handbrake.fr/docs/en/latest/cli/command-line-reference.html
     """
 
-    def __init__(self, output: str, video_format="av_mp4", markers=True, optimize=True, align_av=True):
+    def __init__(self, output: str, chapters="1", video_format="av_mp4", optimize=True, align_av=True):
 
         """
         Parameters
         ----------
         output
             The absolute path with filename to where you want the converted video.
+        chapters
+            Whether or not to add chapter markers as defined in the source. If this is the string "include", then it puts in default
+            markers. If it is instead a path to a .csv file, then it labels the markers accordingly.
         video_format
             Video container format.
-        markers
-            Whether or not to add chapter markers as defined in the source.
         optimize
             Whether or not to optimize MP4 files for HTTP streaming.
         align_av
@@ -89,7 +90,7 @@ class DestinationOptions:
         self._output = EscapedString(output)
         ValidateDirectory(self._output.original)
         self.format = video_format
-        self.markers = markers
+        self.chapters = chapters
         self.optimize = optimize
         self.align_av = align_av
 
@@ -97,7 +98,7 @@ class DestinationOptions:
         return f"Destination options:\n"\
                f"   Output: {self._output.original}\n"\
                f"   Video format: {self.format}\n"\
-               f"   Markers: {self.markers}\n"\
+               f"   Chapters: {self.chapters}\n"\
                f"   Optimize: {self.optimize}\n"\
                f"   Align A/V: {self.align_av}"
 
@@ -113,10 +114,12 @@ class DestinationOptions:
         options = [f"--output={self._output}",
                    f"--format={self.format}",
                    ]
-        if self.markers:
-            options.append(f"--markers={self.markers}")
-        else:
+        if (self.chapters == "0") or (self.chapters == "1"):
             options.append(f"--no-markers")
+        elif isinstance(self.chapters, EscapedString):
+            options.append(f"--markers={self.chapters}")
+        else:
+            options.append(f"--markers")
         if self.optimize:
             options.append(f"--optimize")
         if self.align_av:
@@ -189,6 +192,9 @@ class VideoOptions:
 
 class AudioOptions:
 
+    # TODO: I haven't yet figured out how to get double quotation marks into an
+    #  audio track name. So far I have to edit them manually with Subler.
+
     """
     This class stores audio encoder options.
 
@@ -251,7 +257,7 @@ class AudioOptions:
         if self.sample_rates is not None:
             options.append(f"--arate={self.sample_rates}")
         if self.track_names != 'None':
-            options.append(f'--aname={self.track_names}')
+            options.append(f"--aname={EscapedString(self.track_names)}")
 
         return construct_terminal_commands(options)
 

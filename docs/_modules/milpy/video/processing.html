@@ -121,13 +121,11 @@
 <span class="kn">from</span> <span class="nn">milpy.terminal_interface</span> <span class="kn">import</span> <span class="n">construct_terminal_commands</span>
 <span class="kn">from</span> <span class="nn">milpy.parallel_processing</span> <span class="kn">import</span> <span class="n">get_multiprocessing_pool</span><span class="p">,</span> \
     <span class="n">cleanup_parallel_processing</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
 
 
-<span class="c1"># TODO: Find a way to determine the number of chapters in a source/title, then</span>
-<span class="c1">#  if there are more than 1, include &quot;--markers&quot; in Handbrake command. If 0 or</span>
-<span class="c1">#  1 chapters, then include &quot;--no-markers&quot;. Finally, only do these if a</span>
-<span class="c1">#  spreadsheet entry for &quot;Chapters&quot; does not include the path to a CSV with</span>
-<span class="c1">#  chapter information, in which case it should be &quot;--markers=/path/to/csv.csv&quot;</span>
+<span class="c1"># TODO: Figure out why double quotes won&#39;t appear in HandbrakeCLI audio track</span>
+<span class="c1">#  names.</span>
 
 
 <span class="k">class</span> <span class="nc">_VideoConverter</span><span class="p">:</span>
@@ -272,7 +270,22 @@
                    <span class="sa">f</span><span class="s2">&quot;-metadata </span><span class="si">{</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                    <span class="sa">f</span><span class="s2">&quot;-language English&quot;</span><span class="p">]</span>
         <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">construct_terminal_commands</span><span class="p">(</span><span class="n">options</span><span class="p">))</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">temporary_filepath</span><span class="o">.</span><span class="n">original</span><span class="p">)</span></div></div>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">temporary_filepath</span><span class="o">.</span><span class="n">original</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">get_number_of_chapters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path_to_handbrake_cli</span><span class="p">()</span><span class="si">}</span><span class="s2"> --input=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">terminal_file_path</span><span class="si">}</span><span class="s2"> &quot;</span> \
+              <span class="sa">f</span><span class="s2">&quot;--title=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2"> --scan&quot;</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                              <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">chapters</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">cp</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="s2">&quot;: duration &quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="s1">&#39;00:00:01&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)]</span>
+        <span class="n">number_of_chapters</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chapters</span><span class="p">)</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">number_of_chapters</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="MKV"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.MKV">[docs]</a><span class="k">class</span> <span class="nc">MKV</span><span class="p">:</span>
@@ -319,7 +332,22 @@
 <span class="sd">        Run a test video conversion using 10 seconds at high speed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">converter</span> <span class="o">=</span> <span class="n">_VideoConverter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">converter_options</span><span class="p">)</span>
-        <span class="n">converter</span><span class="o">.</span><span class="n">test</span><span class="p">()</span></div></div>
+        <span class="n">converter</span><span class="o">.</span><span class="n">test</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">get_number_of_chapters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path_to_handbrake_cli</span><span class="p">()</span><span class="si">}</span><span class="s2"> --input=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">terminal_file_path</span><span class="si">}</span><span class="s2"> &quot;</span> \
+              <span class="sa">f</span><span class="s2">&quot;--title=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2"> --scan&quot;</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                              <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">chapters</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">cp</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="s2">&quot;: duration &quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="s1">&#39;00:00:01&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)]</span>
+        <span class="n">number_of_chapters</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chapters</span><span class="p">)</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">number_of_chapters</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ISO"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.ISO">[docs]</a><span class="k">class</span> <span class="nc">ISO</span><span class="p">:</span>
@@ -367,7 +395,22 @@
 <span class="sd">        Run a test video conversion using 10 seconds at high speed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">converter</span> <span class="o">=</span> <span class="n">_VideoConverter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">converter_options</span><span class="p">)</span>
-        <span class="n">converter</span><span class="o">.</span><span class="n">test</span><span class="p">()</span></div></div>
+        <span class="n">converter</span><span class="o">.</span><span class="n">test</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">get_number_of_chapters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path_to_handbrake_cli</span><span class="p">()</span><span class="si">}</span><span class="s2"> --input=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">terminal_file_path</span><span class="si">}</span><span class="s2"> &quot;</span> \
+              <span class="sa">f</span><span class="s2">&quot;--title=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2"> --scan&quot;</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                              <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">chapters</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span>
+                    <span class="n">cp</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span> <span class="k">if</span> <span class="s2">&quot;    + &quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="s2">&quot;: duration &quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="s1">&#39;00:00:01&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)]</span>
+        <span class="n">number_of_chapters</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chapters</span><span class="p">)</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">number_of_chapters</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Spreadsheet"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet">[docs]</a><span class="k">class</span> <span class="nc">Spreadsheet</span><span class="p">:</span>
@@ -404,10 +447,10 @@
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Title&quot;</span><span class="p">]</span>
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Quality Factor&quot;</span><span class="p">]</span>
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">]</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">markers</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Chapters&quot;</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="k">pass</span>
+        <span class="k">if</span> <span class="s2">&quot;Chapters&quot;</span> <span class="ow">in</span> <span class="n">handbrake_metadata</span><span class="p">:</span>
+            <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">chapters</span> <span class="o">=</span> <span class="n">EscapedString</span><span class="p">(</span><span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Chapters&quot;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">chapters</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">get_number_of_chapters</span><span class="p">()</span>
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">audio_titles</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio&quot;</span><span class="p">]</span>
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">bitrates</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Bitrate&quot;</span><span class="p">]</span>
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">mixdowns</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Audio Mixdown&quot;</span><span class="p">]</span>
@@ -626,8 +669,12 @@
 
 <span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
 <span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
-<span class="sd">       those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
-<span class="sd">       might be &quot;3,The Third Chapter&quot;.</span>
+<span class="sd">       those names. You will want these in escaped format, so for instance:</span>
+
+<span class="sd">       | ``1,The\ First\ Chapter\,\ with\ comma``</span>
+<span class="sd">       | ``2,The\ Second\ Chapter\,\ with\ comma``</span>
+
+<span class="sd">       Otherwise, as long as there are more a single chapter, it will automatically include them.</span>
 
 <span class="sd">    Movies:</span>
 <span class="sd">     - **Name:** The name of the movie.</span>
@@ -688,8 +735,12 @@
 
 <span class="sd">     - **Subtitle:** If you want to hard-burn a subtitle track, put its number here.</span>
 <span class="sd">     - **Chapters:** If you want to name the chapters, you need to provide the absolute path to a CSV file containing</span>
-<span class="sd">       those names. The format should be &quot;#,name# for each chapter in the video. For instance, the third line in the CSV</span>
-<span class="sd">       might be &quot;3,The Third Chapter&quot;.</span>
+<span class="sd">       those names. You will want these in escaped format, so for instance:</span>
+
+<span class="sd">       | ``1,The\ First\ Chapter\,\ with\ comma``</span>
+<span class="sd">       | ``2,The\ Second\ Chapter\,\ with\ comma``</span>
+
+<span class="sd">       Otherwise, as long as there are more a single chapter, it will automatically include them.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">kind</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">_columns_for_kind</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>

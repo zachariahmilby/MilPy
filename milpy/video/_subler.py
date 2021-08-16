@@ -47,10 +47,12 @@ class SpreadsheetLoader:
                 "Subtitle", "Chapters", "Quality Factor"]
 
     def make_subler_dictionary(self, line):
-        subler_dictionary = {key: str(value) for key, value in self._get_item_metadata(line)
+        subler_dictionary = {key: value
+                             for key, value in self._get_item_metadata(line)
                              if key not in self._handbrake_dictionary_keys()}
         return self._include_copyright_symbol(subler_dictionary)
 
     def make_handbrake_dictionary(self, line):
-        return {key: str(value) for key, value in self._get_item_metadata(line)
+        return {key: value
+                for key, value in self._get_item_metadata(line)
                 if key in self._handbrake_dictionary_keys()}

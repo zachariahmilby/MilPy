@@ -350,8 +350,8 @@ to be filled out for each item or even an entire spreadsheet, but are the recomm
 </pre></div>
 </div>
 <p class="rubric">Notes</p>
-<dl class="simple">
-<dt>TV Shows:</dt><dd><ul class="simple">
+<dl>
+<dt>TV Shows:</dt><dd><ul>
 <li><p><strong>Name:</strong> The episode title.</p></li>
 <li><p><strong>Artist:</strong> The name of the series.</p></li>
 <li><p><strong>Album Artist:</strong> The name of the series.</p></li>
@@ -377,7 +377,7 @@ is added automatically behind-the-scenes.</p></li>
 <li><p><strong>Rating:</strong> For the US, the options are listed below (they are a little hard to find). For a series from another
 country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()
 function to see what the correct format is.</p>
-<ul>
+<ul class="simple">
 <li><p>us-tv|TV-Y|100|</p></li>
 <li><p>us-tv|TV-Y7|200|</p></li>
 <li><p>us-tv|TV-G|300|</p></li>
@@ -405,7 +405,7 @@ sizes. The format is #:#:#:#, with the numbers referring to &lt;top:bottom:left:
 “7.1 Surround Sound”, or “Commentary with XXX and XXX”. <strong>NOTE:</strong> These will need to be encapsulated by quotation marks,
 e.g., “Stereo Audio”,”Director’s Commentary”. Take care if the label has apostrophes or double quotes.</p></li>
 <li><p><strong>HD Video:</strong> Video definition flag.</p>
-<ul>
+<ul class="simple">
 <li><p>“0” for 480p/576p Standard Definition</p></li>
 <li><p>“1” for 720p High Definition</p></li>
 <li><p>“2” for 1080p Full High Definition</p></li>
@@ -413,7 +413,7 @@ e.g., “Stereo Audio”,”Director’s Commentary”. Take care if the label h
 </ul>
 </li>
 <li><p><strong>Quality Factor:</strong> Handbrake quality factor.</p>
-<ul>
+<ul class="simple">
 <li><p>20±2 for 480p/576p Standard Definition</p></li>
 <li><p>21±2 for 720p High Definition</p></li>
 <li><p>22±2 for 1080p Full High Definition</p></li>
@@ -422,11 +422,16 @@ e.g., “Stereo Audio”,”Director’s Commentary”. Take care if the label h
 </li>
 <li><p><strong>Subtitle:</strong> If you want to hard-burn a subtitle track, put its number here.</p></li>
 <li><p><strong>Chapters:</strong> If you want to name the chapters, you need to provide the absolute path to a CSV file containing
-those names. The format should be “#,name# for each chapter in the video. For instance, the third line in the CSV
-might be “3,The Third Chapter”.</p></li>
+those names. You will want these in escaped format, so for instance:</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">1,The\</span> <span class="pre">First\</span> <span class="pre">Chapter\,\</span> <span class="pre">with\</span> <span class="pre">comma</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">2,The\</span> <span class="pre">Second\</span> <span class="pre">Chapter\,\</span> <span class="pre">with\</span> <span class="pre">comma</span></code></div>
+</div>
+<p>Otherwise, as long as there are more a single chapter, it will automatically include them.</p>
+</li>
 </ul>
 </dd>
-<dt>Movies:</dt><dd><ul class="simple">
+<dt>Movies:</dt><dd><ul>
 <li><p><strong>Name:</strong> The name of the movie.</p></li>
 <li><p><strong>Genre:</strong> Your choice, e.g., “Science Fiction” or “Comedy.”</p></li>
 <li><p><strong>Release Date:</strong> The date of the film in format YYYY-MM-DD. If it’s a special feature, I usually do the release
@@ -439,7 +444,7 @@ is added automatically behind-the-scenes.</p></li>
 <li><p><strong>Rating:</strong> For the US, the options are listed below (they are a little hard to find). For a series from another
 country, make a sample video file, set the rating manually with the Subler GUI, then use the video_inspector()
 function to see what the correct format is.</p>
-<ul>
+<ul class="simple">
 <li><p>mpaa|NR|000|</p></li>
 <li><p>mpaa|G|100|</p></li>
 <li><p>mpaa|PG|200|</p></li>
@@ -471,7 +476,7 @@ sizes. The format is #:#:#:#, with the numbers referring to &lt;top:bottom:left:
 “7.1 Surround Sound”, or “Commentary with XXX and XXX”. <strong>NOTE:</strong> These will need to be encapsulated by quotation marks,
 e.g., “Stereo Audio”,”Director’s Commentary”. Take care if the label has apostrophes or double quotes.</p></li>
 <li><p><strong>HD Video:</strong> Video definition flag.</p>
-<ul>
+<ul class="simple">
 <li><p>“0” for 480p/576p Standard Definition</p></li>
 <li><p>“1” for 720p High Definition</p></li>
 <li><p>“2” for 1080p Full High Definition</p></li>
@@ -479,7 +484,7 @@ e.g., “Stereo Audio”,”Director’s Commentary”. Take care if the label h
 </ul>
 </li>
 <li><p><strong>Quality Factor:</strong> Handbrake quality factor.</p>
-<ul>
+<ul class="simple">
 <li><p>20±2 for 480p/576p Standard Definition</p></li>
 <li><p>21±2 for 720p High Definition</p></li>
 <li><p>22±2 for 1080p Full High Definition</p></li>
@@ -488,8 +493,13 @@ e.g., “Stereo Audio”,”Director’s Commentary”. Take care if the label h
 </li>
 <li><p><strong>Subtitle:</strong> If you want to hard-burn a subtitle track, put its number here.</p></li>
 <li><p><strong>Chapters:</strong> If you want to name the chapters, you need to provide the absolute path to a CSV file containing
-those names. The format should be “#,name# for each chapter in the video. For instance, the third line in the CSV
-might be “3,The Third Chapter”.</p></li>
+those names. You will want these in escaped format, so for instance:</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">1,The\</span> <span class="pre">First\</span> <span class="pre">Chapter\,\</span> <span class="pre">with\</span> <span class="pre">comma</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">2,The\</span> <span class="pre">Second\</span> <span class="pre">Chapter\,\</span> <span class="pre">with\</span> <span class="pre">comma</span></code></div>
+</div>
+<p>Otherwise, as long as there are more a single chapter, it will automatically include them.</p>
+</li>
 </ul>
 </dd>
 </dl>
