@@ -44,7 +44,7 @@ class SpreadsheetLoader:
         """These are the spreadsheet components specific to Handbrake."""
         return ["Source", "Destination", "Title", "Audio", "Dimensions",
                 "Crop", "Audio Bitrate", "Audio Mixdown", "Audio Track Names",
-                "Subtitle", "Chapters", "Quality Factor"]
+                "Subtitles", "Chapters", "Quality Factor"]
 
     def make_subler_dictionary(self, line):
         subler_dictionary = {key: value

@@ -334,12 +334,12 @@ class SubtitleOptions:
             The subtitle track to burn-in.
         """
 
-        self.subtitles = subtitle_tracks
+        self._subtitles = subtitle_tracks
 
     def __str__(self):
-        if self.subtitles != "None":
+        if self._subtitles != "None":
             print_string = f"Subtitle options:\n"\
-                           f"   Track: {self.subtitles}\n"\
+                           f"   Track: {self._subtitles}\n"\
                            f"   Burned-in: on"
         else:
             print_string = ''
@@ -347,6 +347,14 @@ class SubtitleOptions:
 
     def __repr__(self):
         return self.construct_terminal_commands()
+
+    @property
+    def subtitles(self):
+        return self._subtitles
+
+    @subtitles.setter
+    def subtitles(self, value):
+        self._subtitles = value
 
     def construct_terminal_commands(self) -> str:
 

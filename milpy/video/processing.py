@@ -346,6 +346,8 @@ class Spreadsheet:
         video.converter_options.picture.width = handbrake_metadata["Dimensions"].split("x")[0]
         video.converter_options.picture.height = handbrake_metadata["Dimensions"].split("x")[1]
         video.converter_options.picture.crop = handbrake_metadata["Crop"]
+        if "Subtitles" in handbrake_metadata:
+            video.converter_options.subtitle.subtitles = handbrake_metadata["Subtitles"]
         return video
 
     def _parallel_convert(self, item):
