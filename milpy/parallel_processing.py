@@ -2,7 +2,7 @@ import multiprocessing as mp
 
 
 def get_appropriate_number_of_cores():
-    n_cores = int(mp.cpu_count()) - 2
+    n_cores = int(mp.cpu_count()/2 - 1)
     if n_cores < 1:
         n_cores = 1
     return n_cores
