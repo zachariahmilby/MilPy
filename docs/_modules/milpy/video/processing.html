@@ -458,6 +458,8 @@
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Dimensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">picture</span><span class="o">.</span><span class="n">crop</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Crop&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;Subtitles&quot;</span> <span class="ow">in</span> <span class="n">handbrake_metadata</span><span class="p">:</span>
+            <span class="n">video</span><span class="o">.</span><span class="n">converter_options</span><span class="o">.</span><span class="n">subtitle</span><span class="o">.</span><span class="n">subtitles</span> <span class="o">=</span> <span class="n">handbrake_metadata</span><span class="p">[</span><span class="s2">&quot;Subtitles&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">video</span>
 
     <span class="k">def</span> <span class="nf">_parallel_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
@@ -651,8 +653,9 @@
 <span class="sd">       128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.</span>
 <span class="sd">     - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.</span>
 <span class="sd">     - **Audio Track Names:** What to name the audio tracks, like &quot;Mono Audio&quot;, &quot;Stereo Audio&quot;, &quot;5.1 Surround Sound&quot;,</span>
-<span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. **NOTE:** These will need to be encapsulated by quotation marks,</span>
-<span class="sd">       e.g., &quot;Stereo Audio&quot;,&quot;Director&#39;s Commentary&quot;. Take care if the label has apostrophes or double quotes.</span>
+<span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. **NOTE:** If one of the names has a comma in it (like a list</span>
+<span class="sd">       of people&#39;s names), it will need to be encapsulated by double quotes. Unfortunately, I haven&#39;t yet figured out</span>
+<span class="sd">       how to include double quotes in a name, so you will have to fix those manually after conversion.</span>
 <span class="sd">     - **HD Video:** Video definition flag.</span>
 
 <span class="sd">       - &quot;0&quot; for 480p/576p Standard Definition</span>
@@ -717,8 +720,9 @@
 <span class="sd">       128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.</span>
 <span class="sd">     - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.</span>
 <span class="sd">     - **Audio Track Names:** What to name the audio tracks, like &quot;Mono Audio&quot;, &quot;Stereo Audio&quot;, &quot;5.1 Surround Sound&quot;,</span>
-<span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. **NOTE:** These will need to be encapsulated by quotation marks,</span>
-<span class="sd">       e.g., &quot;Stereo Audio&quot;,&quot;Director&#39;s Commentary&quot;. Take care if the label has apostrophes or double quotes.</span>
+<span class="sd">       &quot;7.1 Surround Sound&quot;, or &quot;Commentary with XXX and XXX&quot;. **NOTE:** If one of the names has a comma in it (like a list</span>
+<span class="sd">       of people&#39;s names), it will need to be encapsulated by double quotes. Unfortunately, I haven&#39;t yet figured out</span>
+<span class="sd">       how to include double quotes in a name, so you will have to fix those manually after conversion.</span>
 <span class="sd">     - **HD Video:** Video definition flag.</span>
 
 <span class="sd">       - &quot;0&quot; for 480p/576p Standard Definition</span>

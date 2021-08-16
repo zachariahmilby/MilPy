@@ -541,8 +541,9 @@ def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
        128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.
      - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.
      - **Audio Track Names:** What to name the audio tracks, like "Mono Audio", "Stereo Audio", "5.1 Surround Sound",
-       "7.1 Surround Sound", or "Commentary with XXX and XXX". **NOTE:** These will need to be encapsulated by quotation marks,
-       e.g., "Stereo Audio","Director's Commentary". Take care if the label has apostrophes or double quotes.
+       "7.1 Surround Sound", or "Commentary with XXX and XXX". **NOTE:** If one of the names has a comma in it (like a list
+       of people's names), it will need to be encapsulated by double quotes. Unfortunately, I haven't yet figured out
+       how to include double quotes in a name, so you will have to fix those manually after conversion.
      - **HD Video:** Video definition flag.
 
        - "0" for 480p/576p Standard Definition
@@ -607,8 +608,9 @@ def make_empty_metadata_spreadsheet(save_directory: str, kind: str):
        128 for stereo, 384 for 5.1 surround sound, and 512 for 7.1 surround sound.
      - **Audio Mixdown:** The mixdowns for the audio titles. Options are mono, stereo, 5point1 or 7point1.
      - **Audio Track Names:** What to name the audio tracks, like "Mono Audio", "Stereo Audio", "5.1 Surround Sound",
-       "7.1 Surround Sound", or "Commentary with XXX and XXX". **NOTE:** These will need to be encapsulated by quotation marks,
-       e.g., "Stereo Audio","Director's Commentary". Take care if the label has apostrophes or double quotes.
+       "7.1 Surround Sound", or "Commentary with XXX and XXX". **NOTE:** If one of the names has a comma in it (like a list
+       of people's names), it will need to be encapsulated by double quotes. Unfortunately, I haven't yet figured out
+       how to include double quotes in a name, so you will have to fix those manually after conversion.
      - **HD Video:** Video definition flag.
 
        - "0" for 480p/576p Standard Definition
