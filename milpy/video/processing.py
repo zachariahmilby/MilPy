@@ -9,6 +9,8 @@ from milpy.video._subler import path_to_subler_cli, \
 from milpy.terminal_interface import construct_terminal_commands
 from milpy.parallel_processing import get_multiprocessing_pool, \
     cleanup_parallel_processing
+from milpy.video._spreadsheet_creation import _columns_for_kind, \
+    _make_dataframe_from_columns
 import subprocess
 
 
