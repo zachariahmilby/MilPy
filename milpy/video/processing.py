@@ -391,15 +391,20 @@ class Spreadsheet:
             video = self._set_source_parameters(item)
             video.convert()
 
-    def parallel_convert(self):
+    def parallel_convert(self, n_cores: int = None):
         """
         Convert the source to destination using the Handbrake parameters for
         each item. This converts multiple items at once using as many cores as
         your computer decides to allocate. I find parallel conversion is
         better for a set of standard-definition videos, while serial conversion
         is better for a set of high-definition videos.
+
+        Parameters
+        ----------
+        n_cores
+            If desired, the user-specified number of cores to use.
         """
-        pool = get_multiprocessing_pool()
+        pool = get_multiprocessing_pool(n_cores)
         for item in range(self.spreadsheet.n_items):
             pool.apply_async(self._parallel_convert, args=(item,))
         cleanup_parallel_processing(pool)
@@ -441,7 +446,7 @@ class Spreadsheet:
             video.convert()
             MP4(handbrake_dictionary["Destination"]).tag(subler_dictionary)
 
-    def parallel_convert_and_tag(self):
+    def parallel_convert_and_tag(self, n_cores=None):
         """
         Convert the source to destination using the Handbrake parameters then
         tag with Subler parameters for each item. This converts multiple items
@@ -449,8 +454,13 @@ class Spreadsheet:
         find serial conversion is better for a set of high-definition videos,
         while parallel conversion is better for a set of standard-definition
         videos.
+
+        Parameters
+        ----------
+        n_cores
+            If desired, the user-specified number of cores to use.
         """
-        pool = get_multiprocessing_pool()
+        pool = get_multiprocessing_pool(n_cores)
         for item in range(self.spreadsheet.n_items):
             pool.apply_async(self._parallel_convert_and_tag, args=(item,))
         cleanup_parallel_processing(pool)

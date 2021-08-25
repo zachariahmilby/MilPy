@@ -503,15 +503,20 @@
             <span class="n">video</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_source_parameters</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
             <span class="n">video</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Spreadsheet.parallel_convert"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.parallel_convert">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Spreadsheet.parallel_convert"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.parallel_convert">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_cores</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the source to destination using the Handbrake parameters for</span>
 <span class="sd">        each item. This converts multiple items at once using as many cores as</span>
 <span class="sd">        your computer decides to allocate. I find parallel conversion is</span>
 <span class="sd">        better for a set of standard-definition videos, while serial conversion</span>
 <span class="sd">        is better for a set of high-definition videos.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_cores</span>
+<span class="sd">            If desired, the user-specified number of cores to use.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">()</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">(</span><span class="n">n_cores</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
             <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_convert</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
         <span class="n">cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span></div>
@@ -553,7 +558,7 @@
             <span class="n">video</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
             <span class="n">MP4</span><span class="p">(</span><span class="n">handbrake_dictionary</span><span class="p">[</span><span class="s2">&quot;Destination&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">tag</span><span class="p">(</span><span class="n">subler_dictionary</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Spreadsheet.parallel_convert_and_tag"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.parallel_convert_and_tag">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_convert_and_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Spreadsheet.parallel_convert_and_tag"><a class="viewcode-back" href="../../../rst/subpackages/video/processing.html#milpy.video.processing.Spreadsheet.parallel_convert_and_tag">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_convert_and_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_cores</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the source to destination using the Handbrake parameters then</span>
 <span class="sd">        tag with Subler parameters for each item. This converts multiple items</span>
@@ -561,8 +566,13 @@
 <span class="sd">        find serial conversion is better for a set of high-definition videos,</span>
 <span class="sd">        while parallel conversion is better for a set of standard-definition</span>
 <span class="sd">        videos.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_cores</span>
+<span class="sd">            If desired, the user-specified number of cores to use.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">()</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">get_multiprocessing_pool</span><span class="p">(</span><span class="n">n_cores</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spreadsheet</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
             <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parallel_convert_and_tag</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
         <span class="n">cleanup_parallel_processing</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span></div>

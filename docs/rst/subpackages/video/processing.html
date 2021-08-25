@@ -261,23 +261,33 @@ use the function <cite>make_empty_metadata_spreadsheet()</cite>.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.parallel_convert">
-<span class="sig-name descname"><span class="pre">parallel_convert</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.parallel_convert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.parallel_convert" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">parallel_convert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_cores</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.parallel_convert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.parallel_convert" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert the source to destination using the Handbrake parameters for
 each item. This converts multiple items at once using as many cores as
 your computer decides to allocate. I find parallel conversion is
 better for a set of standard-definition videos, while serial conversion
 is better for a set of high-definition videos.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n_cores</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – If desired, the user-specified number of cores to use.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="milpy.video.processing.Spreadsheet.parallel_convert_and_tag">
-<span class="sig-name descname"><span class="pre">parallel_convert_and_tag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.parallel_convert_and_tag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.parallel_convert_and_tag" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">parallel_convert_and_tag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_cores</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/milpy/video/processing.html#Spreadsheet.parallel_convert_and_tag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#milpy.video.processing.Spreadsheet.parallel_convert_and_tag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert the source to destination using the Handbrake parameters then
 tag with Subler parameters for each item. This converts multiple items
 at once using as many cores as your computer decides to allocate. I
 find serial conversion is better for a set of high-definition videos,
 while parallel conversion is better for a set of standard-definition
 videos.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n_cores</strong> – If desired, the user-specified number of cores to use.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

@@ -15,8 +15,9 @@ def set_processor_pool(n_cores):
     return mp.get_context('fork').Pool(n_cores)
 
 
-def get_multiprocessing_pool():
-    n_cores = get_appropriate_number_of_cores()
+def get_multiprocessing_pool(n_cores=None):
+    if n_cores is None:
+        n_cores = get_appropriate_number_of_cores()
     pool = set_processor_pool(n_cores)
     return pool
 
