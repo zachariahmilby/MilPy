@@ -10,10 +10,8 @@ The flight simulator uses Cartopy, which is a real bitch to install unless you
 use Anaconda. I created an `environment.yml` file to make installation of
 dependencies easy. The easiest way to install this is probably to clone this
 repository to your computer, then build a virtual environment (automatically
-named `milpy`) by
-1. `cd /path/to/cloned/MilPy`
-2. `conda env create -f environment.yml`
-3. `conda activate milpy`
-4. `python -m pip install git+https://github.com/zachariahmilby/MilPy.git`
-
-If the last step doesn't work, you might need to do a direct `pip3 install .`
+named `milpy`):
+1. `% cd /path/to/cloned/MilPy`
+2. `% conda env create -f environment.yml`
+3. `% conda activate milpy`
+4. `% python -m pip install git+https://github.com/zachariahmilby/MilPy.git`

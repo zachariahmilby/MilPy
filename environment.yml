@@ -1,4 +1,4 @@
-name: milpy-test
+name: milpy
 channels:
   - conda-forge
   - defaults
