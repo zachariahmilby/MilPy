@@ -89,6 +89,95 @@ class _File(str):
             raise TypeError(message)
 
 
+class AVI:
+    """
+    Instances of this class represent an MP4 file which is accessible to
+    the computer.
+    """
+
+    def __init__(self, file_path: str):
+        """
+        Parameters
+        ----------
+        file_path
+            The absolute path to a AVI file.
+
+        Raises
+        ------
+        ValueError
+            Raised if the input file path points to a file that does not exist
+            or is inaccessible to the computer.
+        TypeError
+            Raised if the input file path does not have a `.avi` extension.
+        """
+        self.file_path = _File(file_path, 'avi')
+        self.terminal_file_path = EscapedString(file_path)
+        self.converter_options = self._set_converter_options()
+
+    def _set_converter_options(self):
+        file_extension = Path(self.file_path).suffix
+        destination = self.file_path.replace(file_extension,
+                                             '_converted' + file_extension)
+        converter_options = VideoConversionOptions(self.file_path, destination)
+        return converter_options
+
+    def inspect_metadata(self):
+        """
+        Examine any existing metadata in an MP4 file.
+        """
+        command = f'{path_to_subler_cli()} -source {self.terminal_file_path} -listmetadata'
+        os.system(command)
+
+    def convert(self):
+        """
+        Convert the video using the parameters in the `converter_options`
+        attribute.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.convert()
+
+    def test_convert(self):
+        """
+        Run a test video conversion using 10 seconds at high speed.
+        """
+        converter = _VideoConverter(self.converter_options)
+        converter.test()
+
+    def tag(self, metadata_dictionary: dict):
+        """
+        Tag the video with the keys and values in the provided dictionary.
+
+        Parameters
+        ----------
+        metadata_dictionary
+            The metadata tags and values.
+        """
+        temporary_filepath = make_temporary_video(self.file_path)
+        metadata = format_subler_metadata_from_dictionary(metadata_dictionary)
+        options = [path_to_subler_cli(),
+                   f"-source {temporary_filepath}",
+                   f"-dest {EscapedString(self.file_path)}",
+                   f"-metadata {metadata}",
+                   f"-language English"]
+        os.system(construct_terminal_commands(options))
+        os.remove(temporary_filepath.original)
+
+    def get_number_of_chapters(self):
+        cmd = f"{path_to_handbrake_cli()} --input={self.terminal_file_path} " \
+              f"--title={self.converter_options.source.title} --scan"
+        cp = subprocess.Popen(cmd, stderr=subprocess.PIPE,
+                              stdout=subprocess.PIPE, shell=True)
+        chapters = [line.decode("utf-8").replace('\n', '').strip()
+                    for line in cp.stderr.readlines()
+                    if ": duration " in line.decode("utf-8")
+                    and '00:00:01' not in line.decode("utf-8")]
+        number_of_chapters = len(chapters)
+        cp.stderr.close()
+        cp.stdout.close()
+        cp.wait()
+        return str(number_of_chapters)
+
+
 class MP4:
     """
     Instances of this class represent an MP4 file which is accessible to
@@ -328,6 +417,8 @@ class Spreadsheet:
             return MKV(source_filepath)
         elif extension == ".iso":
             return ISO(source_filepath)
+        elif extension == ".avi":
+            return AVI(source_filepath)
         else:
             raise Exception('Bad input file type.')
 
